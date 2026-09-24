@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>
+        <%=profileUser.name%> • UniHelp
+    </title><%- include('partials/head') %>
+</head>
+
+<body><%- include('partials/nav') %>
+        <main class="shell">
+            <section class="profile-card">
+                <div class="profile-top">
+                    <div class="profile-avatar">
+                        <% if(profileUser.avatar){%><img src="<%=profileUser.avatar%>" alt="<%=profileUser.name%>">
+                            <%}else{%><span>
+                                    <%=profileUser.name[0].toUpperCase()%>
+                                </span>
+                                <%}%>
+                    </div>
+                    <div class="profile-main">
+                        <h1>
+                            <%=profileUser.name%>
+                        </h1>
+                        <p class="muted">
+                            <%=profileUser.department||'University student'%> · <%=profileUser.year||'Campus'%>
+                        </p>
+                        <% if(profileUser.bio){ %>
+                            <div class="bio-display">
+                                <p>
+                                    <%=profileUser.bio%>
+                                </p>
+                                <% if(!readonly){%><button type="button" class="bio-edit"
+                                        onclick="toggleBioEditor()">Edit</button>
+                                    <%}%>
+                            </div>
+                            <% } else if(!readonly){ %><button type="button" class="bio-plus" title="Add bio"
+                                    onclick="toggleBioEditor()">+</button>
+                                <% } %>
+                                    <% if(!readonly){%>
+                                        <form id="bioEditor" class="bio-editor" action="/profile/update" method="post">
+                                            <textarea name="bio" maxlength="500"
+                                                placeholder="Write a short bio"><%=profileUser.bio||''%></textarea>
+                                            <div><button type="submit" class="primary">Save bio</button><button
+                                                    type="button" class="secondary-btn"
+                                                    onclick="toggleBioEditor()">Cancel</button></div>
+                                        </form>
+                                        <%}%>
+                    </div>
+                    <% if(!readonly){%>
+                        <div class="profile-actions">
+                            <button type="button" class="change-photo-btn"
+                                onclick="document.getElementById('avatarForm').click()">
+                                📷 Change photo
+                            </button>
+
+                            <a href="/settings" class="settings-btn">
+                                ⚙️ Settings
+                            </a>
+                        </div>
+                        <%}%>
+                </div>
+                <div class="stats">
+                    <div><b>
+                            <%=profileUser.helpPoints%>
+                        </b><span>Help Points</span></div>
+                    <div><b>
+                            <%=profileUser.trustScore%>
+                        </b><span>Trust Score</span></div>
+                    <div><b>
+                            <%=posts.length%>
+                        </b><span>Posts</span></div>
+                </div>
+                <% if(!readonly){%>
+                    <form id="avatarFormWrap" action="/profile/avatar" method="post" enctype="multipart/form-data">
+
+                        <input id="avatarForm" type="file" name="avatar" accept="image/*" hidden
+                            onchange="this.form.submit()">
+                    </form>
+                    <form method="post" action="/logout">
+                        <button type="submit" class="logout-btn">
+                            ↪ Log out
+                        </button>
+                    </form>
+                    <%}%>
+            </section>
+            <h2 class="section-title">Posts by
+                <%=profileUser.name.split(' ')[0]%></h2><section class="feed"><%posts.forEach(p=>{%><article class="post"><div class="post-head"><span class="avatar"><%=profileUser.name[0].toUpperCase()%></span><div><b><%=profileUser.name%></b><div class="muted tiny"><%=new Date(p.createdAt).toLocaleString()%></div></div><span class="tag"><%=p.type%></span></div><p class="post-text"><%=p.content%></p></article><%})%></section></main>
+           <script>
+            function toggleBioEditor() {
+                const editor = document.querySelector(".bio-editor");
+
+                if (editor) {
+                    editor.classList.toggle("show");
+                }
+            }
+        </script>
+</body>
+
+</html>

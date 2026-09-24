@@ -1,0 +1,338 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Settings • UniHelp</title>
+    <%- include('partials/head') %>
+</head>
+
+<body>
+    <%- include('partials/nav') %>
+
+        <main class="shell narrow settings-page">
+            <h1>Settings</h1>
+            <p class="muted">Manage your account and security.</p>
+
+            <div class="settings-card">
+                <h3>Account</h3>
+
+                <!-- CHANGE PASSWORD -->
+
+                <button type="button" class="settings-option" id="changePasswordToggle" aria-expanded="false"
+                    aria-controls="changePasswordPanel">
+                    <span>
+                        <strong>Change Password</strong>
+                        <small>Update your account password</small>
+                    </span>
+
+                    <span id="passwordArrow">⌄</span>
+                </button>
+
+                <div id="changePasswordPanel" class="password-panel" hidden>
+                    <form action="/change-password" method="POST" id="changePasswordForm" novalidate>
+                        <div class="settings-field">
+                            <label for="currentPassword">
+                                Current Password
+                            </label>
+
+                            <input type="password" id="currentPassword" name="currentPassword"
+                                autocomplete="current-password" required>
+
+                            <small class="field-error" id="currentPasswordError"></small>
+                        </div>
+
+                        <div class="settings-field">
+                            <label for="newPassword">
+                                New Password
+                            </label>
+
+                            <input type="password" id="newPassword" name="newPassword" autocomplete="new-password"
+                                required>
+
+                            <small class="password-hint">
+                                At least 8 characters, including uppercase,
+                                lowercase, a number and a special character.
+                            </small>
+
+                            <small class="field-error" id="newPasswordError"></small>
+                        </div>
+
+                        <div class="settings-field">
+                            <label for="confirmPassword">
+                                Confirm New Password
+                            </label>
+
+                            <input type="password" id="confirmPassword" name="confirmPassword"
+                                autocomplete="new-password" required>
+
+                            <small class="field-error" id="confirmPasswordError"></small>
+                        </div>
+
+                        <% if ( typeof error !=='undefined' && error ) { %>
+                            <p class="settings-alert error-alert">
+                                <%= error %>
+                            </p>
+                            <% } %>
+
+                                <% if ( typeof success !=='undefined' && success ) { %>
+                                    <p class="settings-alert success-alert">
+                                        <%= success %>
+                                    </p>
+                                    <% } %>
+
+                                        <a href="/forgot-password" class="forgot-password-link">
+                                            Forgot your password?
+                                        </a>
+
+                                        <button type="submit" class="primary update-password-btn">
+                                            Update Password
+                                        </button>
+                    </form>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- PRIVACY -->
+
+                <h3>Privacy &amp; Safety</h3>
+
+                <p class="muted">
+                    Never share your password or OTP with anyone.
+                    Report suspicious activity to an administrator.
+                </p>
+
+                <div class="settings-divider"></div>
+
+                <!-- DELETE ACCOUNT -->
+
+                <section class="delete-account-section">
+                    <h3>Delete Account</h3>
+
+                    <p class="muted">
+                        Permanently delete your UniHelp account,
+                        posts and associated activity. Shared chat
+                        history may remain visible to other participants
+                        under the name Deleted User.
+                        This action cannot be undone.
+                    </p>
+
+                    <button type="button" class="delete-account-toggle" id="deleteAccountToggle" aria-expanded="false"
+                        aria-controls="deleteAccountPanel">
+                        Delete Account
+                    </button>
+
+                    <div id="deleteAccountPanel" class="delete-account-panel" hidden>
+                        <h4>Confirm Account Deletion</h4>
+
+                        <p class="muted">
+                            Enter your current password to confirm.
+                        </p>
+
+                        <form action="/delete-account" method="POST" id="deleteAccountForm">
+                            <label for="deletePassword">
+                                Current Password
+                            </label>
+
+                            <input type="password" id="deletePassword" name="password" autocomplete="current-password"
+                                required>
+
+                            <small class="field-error" id="deletePasswordError" role="alert">
+                                <% if ( typeof deleteError !=='undefined' && deleteError ) { %>
+                                    <%= deleteError %>
+                                        <% } %>
+                            </small>
+
+                            <button type="submit" class="confirm-delete-btn">
+                                Permanently Delete Account
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <script>
+            // CHANGE PASSWORD
+
+            const toggle = document.querySelector(
+                "#changePasswordToggle"
+            );
+
+            const panel = document.querySelector(
+                "#changePasswordPanel"
+            );
+
+            const arrow = document.querySelector(
+                "#passwordArrow"
+            );
+
+            const form = document.querySelector(
+                "#changePasswordForm"
+            );
+
+            function openPasswordPanel() {
+                panel.hidden = false;
+                toggle.setAttribute("aria-expanded", "true");
+                arrow.textContent = "⌃";
+            }
+
+            toggle.addEventListener("click", function () {
+                if (panel.hidden) {
+                    openPasswordPanel();
+                } else {
+                    panel.hidden = true;
+                    toggle.setAttribute("aria-expanded", "false");
+                    arrow.textContent = "⌄";
+                }
+            });
+
+            const hasPasswordMessage =
+                document.querySelector(
+                    "#changePasswordForm .settings-alert"
+                ) !== null;
+
+            if (hasPasswordMessage) {
+                openPasswordPanel();
+            }
+
+            function showError(fieldId, message) {
+                const field = document.getElementById(fieldId);
+                const error = document.getElementById(
+                    fieldId + "Error"
+                );
+
+                field.classList.add("invalid");
+                error.textContent = message;
+            }
+
+            function clearErrors() {
+                document.querySelectorAll(
+                    "#changePasswordForm .field-error"
+                ).forEach(function (el) {
+                    el.textContent = "";
+                });
+
+                document.querySelectorAll(
+                    "#changePasswordForm .settings-field input"
+                ).forEach(function (el) {
+                    el.classList.remove("invalid");
+                });
+            }
+
+            form.addEventListener("submit", function (event) {
+                clearErrors();
+
+                const current = document.getElementById(
+                    "currentPassword"
+                ).value;
+
+                const password = document.getElementById(
+                    "newPassword"
+                ).value;
+
+                const confirm = document.getElementById(
+                    "confirmPassword"
+                ).value;
+
+                let valid = true;
+
+                if (!current) {
+                    showError(
+                        "currentPassword",
+                        "Please enter your current password."
+                    );
+                    valid = false;
+                }
+
+                const passwordRule =
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+                if (!passwordRule.test(password)) {
+                    showError(
+                        "newPassword",
+                        "Use at least 8 characters with uppercase, lowercase, a number and a special character."
+                    );
+                    valid = false;
+                }
+
+                if (password !== confirm) {
+                    showError(
+                        "confirmPassword",
+                        "Passwords do not match."
+                    );
+                    valid = false;
+                }
+
+                if (!valid) {
+                    event.preventDefault();
+                }
+            });
+
+            // DELETE ACCOUNT
+
+            const deleteToggle = document.querySelector(
+                "#deleteAccountToggle"
+            );
+
+            const deletePanel = document.querySelector(
+                "#deleteAccountPanel"
+            );
+
+            const deleteForm = document.querySelector(
+                "#deleteAccountForm"
+            );
+
+            const deletePassword = document.querySelector(
+                "#deletePassword"
+            );
+
+            const deleteError = document.querySelector(
+                "#deletePasswordError"
+            );
+
+            function openDeletePanel() {
+                deletePanel.hidden = false;
+
+                deleteToggle.setAttribute(
+                    "aria-expanded",
+                    "true"
+                );
+            }
+
+            deleteToggle.addEventListener("click", function () {
+                deletePanel.hidden = !deletePanel.hidden;
+
+                deleteToggle.setAttribute(
+                    "aria-expanded",
+                    String(!deletePanel.hidden)
+                );
+            });
+
+            // Open the panel automatically after a backend error.
+            if (deleteError.textContent.trim()) {
+                openDeletePanel();
+            }
+
+            deleteForm.addEventListener("submit", function (event) {
+                deleteError.textContent = "";
+
+                if (!deletePassword.value.trim()) {
+                    deleteError.textContent =
+                        "Please enter your current password.";
+
+                    event.preventDefault();
+                    return;
+                }
+
+                const confirmed = window.confirm(
+                    "Are you sure? Your UniHelp account will be permanently deleted. This action cannot be undone."
+                );
+
+                if (!confirmed) {
+                    event.preventDefault();
+                }
+            });
+        </script>
+</body>
+
+</html>

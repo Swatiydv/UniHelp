@@ -1,0 +1,18 @@
+UNiHELP FINAL PRO
+
+1. Make sure MongoDB is running.
+2. Copy .env.example to .env.
+3. npm install
+4. npm start
+5. Visit http://localhost:3000
+
+Default database: UniHelp_Final
+
+Password requirement:
+- 8 or more characters
+- at least one uppercase letter
+- at least one lowercase letter
+- at least one number
+- at least one special character
+
+The signup flow automatically logs the new user in.

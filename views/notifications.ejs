@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Notifications • UniHelp</title>
+    <%- include('partials/head') %>
+</head>
+
+<body>
+
+    <%- include('partials/nav') %>
+
+        <main class="shell narrow">
+
+            <h1>Notifications</h1>
+            <p class="muted">Updates about your posts and help requests.</p>
+
+            <div class="notification-list">
+
+                <% notifications.forEach(n=> { %>
+
+                    <a href="<%= n.link || '/notifications' %>" class="notification">
+
+                        <span class="n-icon">
+                            <%= n.type==='helpAccepted' ? '✓' : n.type==='helpComplete' ? '★' : '🤝' %>
+                        </span>
+
+                        <div class="notification-body">
+
+                            <b>
+                                <%= n.message %>
+                            </b>
+
+                            <small>
+                                <%= new Date(n.createdAt).toLocaleString() %>
+                            </small>
+
+                            <% if(n.type==='help' && n.helpId && n.helpStatus==='Requested' ) { %>
+
+                                <div class="notification-action">
+                                    <button type="button" class="primary small-btn"
+                                        onclick="acceptHelpFromNotification('<%= n.helpId %>', event)">
+                                        Accept Help
+                                    </button>
+                                </div>
+
+                                <% } else if(n.type==='help' && n.helpStatus==='Accepted' ) { %>
+
+                                    <span class="accepted-label">Accepted</span>
+
+                                    <% } else if(n.type==='help' && n.helpStatus==='Completed' ){ %>
+
+                                        <span class="accepted-label">Completed</span>
+
+                                        <% } %>
+
+                        </div>
+
+                    </a>
+
+                    <% }) %>
+
+                        <% if(!notifications.length) { %>
+
+                            <div class="empty">
+                                You're all caught up.
+                            </div>
+
+                            <% } %>
+
+            </div>
+
+        </main>
+        <script>
+            async function acceptHelpFromNotification(helpId, event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const button = event.currentTarget;
+
+                button.disabled = true;
+                button.textContent = 'Accepting...';
+
+                try {
+                    const response = await fetch('/help/' + helpId + '/accept', {
+                        method: 'POST'
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Could not accept help.');
+                    }
+
+                    // Go directly to the Home feed and refresh it
+                    window.location.href = '/home';
+
+                } catch (error) {
+                    console.error('ACCEPT HELP ERROR:', error);
+
+                    alert(error.message);
+
+                    button.disabled = false;
+                    button.textContent = 'Accept Help';
+                }
+            }
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,2 @@
+const mongoose=require('mongoose');
+const schema=new mongoose.Schema({user:{type:mongoose.Schema.Types.ObjectId,ref:'User',required:true},content:{type:String,required:true,trim:true,maxlength:1000},type:{type:String,enum:['Help Request','Question','Borrow','Sell','Lend'],required:true},itemName:{type:String,default:''},itemCondition:{type:String,default:''},status:{type:String,enum:['Open','Resolved','Closed'],default:'Open'}},{timestamps:true});module.exports=mongoose.models.Post||mongoose.model('Post',schema);

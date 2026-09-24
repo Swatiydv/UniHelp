@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Chats • UniHelp</title>
+    <%- include('partials/head') %>
+</head>
+
+<body>
+    <%- include('partials/nav') %>
+
+        <main class="shell narrow">
+            <h1>Chats</h1>
+            <p class="muted">Your real-time student conversations.</p>
+
+            <div class="chat-list">
+                <% conversations.forEach(c=> {
+                    const other = c.participants.find(
+                    x => x && x._id.toString() !== user.id
+                    );
+                    %>
+
+                    <a class="chat-row" href="/chat/<%= c._id %>">
+                        <span class="avatar">
+                            <%= other?.name?.[0]?.toUpperCase() || 'D' %>
+                        </span>
+
+                        <div>
+                            <b>
+                                <%= other?.name || 'Deleted User' %>
+                            </b>
+
+                            <p>
+                                <%= c.lastMessage || 'Start a conversation' %>
+                            </p>
+                        </div>
+
+                        <span>›</span>
+                    </a>
+
+                    <% }) %>
+
+                        <% if (!conversations.length) { %>
+                            <div class="empty">
+                                No chats yet. Help someone and a conversation
+                                will appear here.
+                            </div>
+                            <% } %>
+            </div>
+        </main>
+</body>
+
+</html>

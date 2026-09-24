@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Reset Password</title><%- include('partials/head') %>
+</head>
+
+<body class="auth-page">
+    <div class="auth-card"><a class="brand big" href="/login"><span
+                class="logo-mark"><span>U</span></span><span>Uni<span>Help</span></span></a>
+        <h1>Reset password</h1>
+        <p class="muted">We'll send a six-digit code to your email.</p>
+        <% if(error){%>
+            <div class="alert">
+                <%=error%>
+            </div>
+            <%}%>
+                <% if(message){%>
+                    <div class="success">
+                        <%=message%>
+                    </div>
+                    <%}%>
+                        <form method="post"><label>Email<input type="email" name="email"
+                                    value="<%= typeof email !== 'undefined' ? email : '' %>" required></label><button
+                                class="primary">Send reset code</button></form>
+                        <p class="switch"><a href="/login">Back to login</a></p>
+    </div>
+</body>
+
+</html>

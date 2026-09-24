@@ -1,0 +1,2 @@
+const mongoose=require('mongoose');
+const schema=new mongoose.Schema({user:{type:mongoose.Schema.Types.ObjectId,ref:'User'},actor:{type:mongoose.Schema.Types.ObjectId,ref:'User'},type:String,message:String,helpId:{type:mongoose.Schema.Types.ObjectId,ref:'Help',default:null},link:{type:String,default:'#'},read:{type:Boolean,default:false}},{timestamps:true});module.exports=mongoose.models.Notification||mongoose.model('Notification',schema);

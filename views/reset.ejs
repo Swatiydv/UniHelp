@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Reset Password • UniHelp</title>
+    <%- include('partials/head') %>
+</head>
+
+<body class="auth-page">
+    <div class="auth-card">
+        <a class="brand big" href="/login">
+            <span class="logo-mark"><span>U</span></span>
+            <span>Uni<span>Help</span></span>
+        </a>
+
+        <h1>Choose a new password</h1>
+        <p class="muted">
+            Enter the six-digit code sent to your email.
+        </p>
+
+        <% if (error) { %>
+            <div class="alert">
+                <%= error %>
+            </div>
+            <% } %>
+
+                <form method="POST" action="/reset-password" id="resetForm">
+                    <input type="hidden" name="email" value="<%= email %>">
+
+                    <label>
+                        Reset Code
+                        <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                            placeholder="Enter 6-digit code" required>
+                    </label>
+
+                    <label>
+                        New Password
+                        <input type="password" name="password" id="newPassword" autocomplete="new-password" required>
+                    </label>
+
+                    <small>
+                        At least 8 characters, including uppercase,
+                        lowercase, a number and a special character.
+                    </small>
+
+                    <label>
+                        Confirm New Password
+                        <input type="password" name="confirmPassword" id="confirmPassword" autocomplete="new-password"
+                            required>
+                    </label>
+
+                    <small id="passwordError" style="color: #dc2626;"></small>
+
+                    <button type="submit" class="primary">
+                        Reset Password
+                    </button>
+                </form>
+
+                <p class="switch">
+                    <a href="/forgot-password">Request another code</a>
+                </p>
+    </div>
+
+    <script>
+        document.getElementById("resetForm").addEventListener(
+            "submit",
+            function (event) {
+                const password =
+                    document.getElementById("newPassword").value;
+
+                const confirm =
+                    document.getElementById("confirmPassword").value;
+
+                const error =
+                    document.getElementById("passwordError");
+
+                error.textContent = "";
+
+                const rule =
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+                if (!rule.test(password)) {
+                    error.textContent =
+                        "Password does not meet the requirements.";
+                    event.preventDefault();
+                } else if (password !== confirm) {
+                    error.textContent = "Passwords do not match.";
+                    event.preventDefault();
+                }
+            }
+        );
+    </script>
+</body>
+
+</html>

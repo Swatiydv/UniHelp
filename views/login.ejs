@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Login • UniHelp</title>
+    <%- include('partials/head') %>
+</head>
+
+<body class="auth-page">
+    <div class="auth-card">
+
+        <a class="brand big" href="/login">
+            <span class="logo-mark">
+                <span>U</span>
+            </span>
+            <span>Uni<span>Help</span></span>
+        </a>
+
+        <h1>Welcome back</h1>
+        <p class="muted">Your campus community is waiting.</p>
+
+        <% if (typeof error !=='undefined' && error) { %>
+            <div class="alert">
+                <%= error %>
+
+                    <% if (typeof showSignup !=='undefined' && showSignup) { %>
+                        <a href="/signup">sign up.</a>
+                        <% } %>
+            </div>
+            <% } %>
+
+                <form method="post" action="/login">
+                    <label>
+                        Email
+                        <input type="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>"
+                            required>
+                    </label>
+
+                    <label>
+                        Password
+                        <input type="password" name="password" required>
+                    </label>
+
+                    <button class="primary">
+                        Login
+                    </button>
+                </form>
+
+                <a class="forgot" href="/forgot-password">
+                    Forgot password?
+                </a>
+
+                <p class="switch">
+                    New here?
+                    <a href="/signup">Create an account</a>
+                </p>
+
+    </div>
+</body>
+
+</html>

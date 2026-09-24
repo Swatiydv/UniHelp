@@ -1,0 +1,1 @@
+const express=require('express');const Notification=require('../models/notification');const router=express.Router();router.post('/api/notifications/read',async(req,res)=>{if(req.session.userId)await Notification.updateMany({user:req.session.userId,read:false},{$set:{read:true}});res.json({ok:true});});module.exports=router;

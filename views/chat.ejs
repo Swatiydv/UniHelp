@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Chat with <%= other ? other.name : 'Deleted User' %>
+    </title>
+    <%- include('partials/head') %>
+</head>
+
+<body>
+    <%- include('partials/nav') %>
+
+        <main class="shell narrow chat-shell">
+            <div class="chat-title">
+                <a href="/chats">←</a>
+
+                <span class="avatar">
+                    <%= other && other.name ? other.name[0].toUpperCase() : 'D' %>
+                </span>
+
+                <div>
+                    <b>
+                        <%= other ? other.name : 'Deleted User' %>
+                    </b>
+                    <small>
+                        <%= other ? 'Online chat' : 'Account deleted' %>
+                    </small>
+                </div>
+            </div>
+
+            <div class="messages" id="messages">
+                <% messages.forEach(m=> { %>
+                    <div class="bubble <%= m.sender && m.sender._id.toString() === user.id ? 'mine' : '' %>">
+                        <%= m.text %>
+
+                            <small>
+                                <%= new Date(m.createdAt).toLocaleString([], { day: '2-digit' , month: 'short' ,
+                                    year: 'numeric' , hour: '2-digit' , minute: '2-digit' }) %>
+                            </small>
+                    </div>
+                    <% }) %>
+            </div>
+
+            <div id="typing" class="typing"></div>
+
+            <% if (other) { %>
+                <form class="chat-input" id="chatForm">
+                    <input id="messageInput" autocomplete="off" placeholder="Write a message...">
+                    <button>➤</button>
+                </form>
+                <% } else { %>
+                    <p class="muted">
+                        This account has been deleted. You can view previous
+                        messages, but you can no longer send new ones.
+                    </p>
+                    <% } %>
+        </main>
+
+        <script>
+            const socket = io();
+            const cid = '<%= conversation._id %>';
+
+            socket.emit('joinChat', cid);
+
+            const box = document.getElementById('messages');
+            const chatForm = document.getElementById('chatForm');
+
+            if (chatForm) {
+                chatForm.onsubmit = e => {
+                    e.preventDefault();
+
+                    const input = document.getElementById('messageInput');
+
+                    if (input.value.trim()) {
+                        socket.emit('sendMessage', {
+                            conversationId: cid,
+                            text: input.value
+                        });
+
+                        input.value = '';
+                    }
+                };
+
+                document.getElementById('messageInput').oninput = () => {
+                    socket.emit('typing', {
+                        conversationId: cid
+                    });
+                };
+            }
+
+            socket.on('newMessage', m => {
+                const d = document.createElement('div');
+
+                d.className = 'bubble ' +
+                    (m.sender === '<%= user.id %>' ? 'mine' : '');
+
+                d.innerHTML = '<span></span><small></small>';
+
+                d.querySelector('span').textContent = m.text;
+
+                d.querySelector('small').textContent =
+                    new Date(m.createdAt).toLocaleString([], {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                box.appendChild(d);
+                box.scrollTop = box.scrollHeight;
+            });
+
+            socket.on('typing', x => {
+                const typing = document.getElementById('typing');
+
+                typing.textContent = x.name + ' is typing…';
+
+                setTimeout(() => {
+                    typing.textContent = '';
+                }, 1200);
+            });
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,1 @@
+const p=document.getElementById('pw'),h=document.getElementById('pwHelp');if(p) p.addEventListener('input',()=>{const ok=/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(p.value);h.style.color=ok?'#13a46b':'#718096';h.textContent=ok?'✓ Strong password':'8+ chars · uppercase · lowercase · number · special character'});
