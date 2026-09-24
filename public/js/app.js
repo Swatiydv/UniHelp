@@ -61,7 +61,116 @@ async function cancelHelp(id, button) {
     location.reload();
 }
 
-function toggleAI() { document.getElementById('aiPanel').classList.toggle('show'); } document.getElementById('aiForm')?.addEventListener('submit', async e => { e.preventDefault(); const i = document.getElementById('aiInput'), q = i.value.trim(); if (!q) return; const box = document.getElementById('aiMessages'); box.insertAdjacentHTML('beforeend', `<div class="ai-msg me"></div>`); box.lastElementChild.textContent = q; i.value = ''; const r = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: q }) }); const j = await r.json(); const d = document.createElement('div'); d.className = 'ai-msg'; d.textContent = j.reply; box.appendChild(d); box.scrollTop = box.scrollHeight; });
+
+// UNIHELP AI CHATBOT
+
+function toggleAI() {
+    const panel = document.getElementById('aiPanel');
+    if (panel) {
+        panel.classList.toggle('show');
+    }
+}
+
+function startAIReport(isSerious) {
+    const input = document.getElementById('aiInput');
+    const panel = document.getElementById('aiPanel');
+
+    if (!input || !panel) return;
+
+    panel.classList.add('show');
+
+    input.value = isSerious
+        ? 'report serious issue: '
+        : 'report issue: ';
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+}
+
+const aiForm = document.getElementById('aiForm');
+
+if (aiForm) {
+    const aiInput = document.getElementById('aiInput');
+    const aiMessages = document.getElementById('aiMessages');
+    const aiHistory = [];
+    const sendButton = aiForm.querySelector('button');
+
+    function addAIMessage(text, isUser = false) {
+        const message = document.createElement('div');
+
+        message.className = isUser
+            ? 'ai-msg me'
+            : 'ai-msg';
+
+        message.textContent = text;
+        aiMessages.appendChild(message);
+
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+
+        return message;
+    }
+
+    aiForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const question = aiInput.value.trim();
+        if (!question) return;
+
+        addAIMessage(question, true);
+
+        aiInput.value = '';
+        aiInput.disabled = true;
+        sendButton.disabled = true;
+
+        const loading = addAIMessage('Thinking...');
+
+        try {
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: question,
+                    history: aiHistory
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Could not get a response.');
+            }
+
+            const data = await response.json();
+
+            loading.textContent =
+                data.reply || 'Sorry, I could not answer that.';
+
+            if (response.ok && data.reply) {
+                aiHistory.push(
+                    { role: 'user', content: question },
+                    { role: 'assistant', content: data.reply }
+                );
+
+                // Keep only the most recent 10 messages.
+                if (aiHistory.length > 10) {
+                    aiHistory.splice(0, aiHistory.length - 10);
+                }
+            }
+        } catch (error) {
+            console.error('CHATBOT ERROR:', error);
+
+            loading.textContent =
+                'Something went wrong. Please try again.';
+
+        } finally {
+            aiInput.disabled = false;
+            sendButton.disabled = false;
+            aiInput.focus();
+
+            aiMessages.scrollTop = aiMessages.scrollHeight;
+        }
+    });
+}
 async function badges() { try { const r = await fetch('/api/unread'); if (!r.ok) return; const j = await r.json(); document.getElementById('chatDot')?.style.setProperty('display', j.chats ? 'block' : 'none'); document.getElementById('notifDot')?.style.setProperty('display', j.notifications ? 'block' : 'none'); } catch { } } badges(); setInterval(badges, 3000); socket.on('chatPing', () => { document.getElementById('chatDot')?.style.setProperty('display', 'block'); }); socket.on('helpUpdate', () => { document.getElementById('notifDot')?.style.setProperty('display', 'block'); });
 
 socket.on('helpNotification', () => { document.getElementById('notifDot')?.style.setProperty('display', 'block'); }); socket.on('newPost', p => { const feed = document.getElementById('feed'); if (!feed) return; if (document.querySelector(`[data-id=\"${p._id}\"]`)) return; const el = document.createElement('article'); el.className = 'post'; el.dataset.id = p._id; el.innerHTML = `<div class=\"post-head\"><span class=\"avatar\">${(p.user.name || 'S')[0].toUpperCase()}</span><div><b class=\"user-name\">${p.user.name}</b><div class=\"muted tiny\">${p.user.department || 'Student'} · ${p.user.year || 'Campus'} · just now</div></div><span class=\"tag\">${p.type}</span></div><p class=\"post-text\">${p.content}</p><div class=\"post-actions\"><button class=\"help-btn\" onclick=\"offerHelp('${p._id}',this)\">🤝 Help</button></div>`; feed.prepend(el); });

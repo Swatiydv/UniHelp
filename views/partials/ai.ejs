@@ -1,1 +1,21 @@
-<button class="ai-fab" onclick="toggleAI()">✦</button><div class="ai-panel" id="aiPanel"><div class="ai-head"><b>UniHelp AI</b><button onclick="toggleAI()">×</button></div><div class="ai-messages" id="aiMessages"><div class="ai-msg">Hi! I'm UniHelp AI. What can I help you with?</div></div><form id="aiForm"><input id="aiInput" placeholder="Ask anything..."><button>➤</button></form></div>
+<button class="ai-fab" onclick="toggleAI()">✦</button>
+<div class="ai-panel" id="aiPanel">
+    <div class="ai-head"><b>UniHelp AI</b><button onclick="toggleAI()">×</button></div>
+    <div class="ai-messages" id="aiMessages">
+        <div class="ai-msg">Hi! I'm UniHelp AI. What can I help you with?</div>
+    </div>
+    <div class="ai-report-actions">
+        <button type="button" class="ai-report-btn" onclick="startAIReport(false)">
+            ✎ Report issue
+        </button>
+
+        <button type="button" class="ai-report-btn serious" onclick="startAIReport(true)">
+            ⚠ Serious issue
+        </button>
+    </div>
+
+    <form id="aiForm">
+        <input id="aiInput" placeholder="Ask about UniHelp..." maxlength="2000" autocomplete="off">
+        <button type="submit">➤</button>
+    </form>
+</div>

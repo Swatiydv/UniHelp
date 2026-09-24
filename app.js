@@ -12,6 +12,8 @@ const Rating = require('./models/rating');
 const Notification = require('./models/notification');
 const Conversation = require('./models/conversation');
 const Message = require('./models/message');
+const SupportQuery = require('./models/supportQuery');
+const nodemailer = require('nodemailer');
 const app = express();
 const server = http.createServer(app); const io = new Server(server);
 const PORT = process.env.PORT || 3000;
@@ -69,7 +71,275 @@ app.get('/chats', async (req, res) => { if (!req.session.userId) return res.redi
 app.get('/notifications', async (req, res) => { if (!req.session.userId) return res.redirect('/login'); const ns = await Notification.find({ user: req.session.userId }).populate('actor', 'name avatar').sort({ createdAt: -1 }).limit(100).lean(); const helpIds = ns.filter(n => n.helpId).map(n => n.helpId); const hs = helpIds.length ? await require('./models/help').find({ _id: { $in: helpIds } }).select('_id status').lean() : []; const map = new Map(hs.map(h => [String(h._id), h.status])); ns.forEach(n => { if (n.helpId) n.helpStatus = map.get(String(n.helpId)) || 'Requested'; }); await Notification.updateMany({ user: req.session.userId }, { $set: { read: true } }); res.render('notifications', { notifications: ns }); });
 app.get('/api/search', async (req, res) => { if (!req.session.userId) return res.status(401).json({}); const q = (req.query.q || '').trim(); const posts = await Post.find({ $or: [{ content: { $regex: q, $options: 'i' } }, { type: { $regex: q, $options: 'i' } }] }).populate('user', 'name department year avatar').sort({ createdAt: -1 }).limit(50); res.json(posts); });
 app.get('/ai', async (req, res) => res.json({ enabled: !!process.env.AI_API_KEY }));
-app.post('/api/ai', async (req, res) => { try { const q = (req.body.message || '').trim(); if (!q) return res.json({ reply: 'Ask me anything about UniHelp or student life.' }); if (!process.env.AI_API_KEY) { const ql = q.toLowerCase(); let reply = 'I can help with UniHelp features, posts, help requests, chats, profiles and account questions.'; if (/password|forgot|reset/.test(ql)) reply = 'For a password issue, use Forgot password on the login page. Your new password must be at least 8 characters and include uppercase, lowercase, a number and a special character.'; else if (/help request|offer help|accept help/.test(ql)) reply = 'Open a post and choose Help. The post owner receives a real-time notification and can accept your offer from Notifications. Multiple students can offer help until the request is completed.'; else if (/chat|message/.test(ql)) reply = 'UniHelp chat is real time. Open Chats and messages appear instantly without refreshing.'; else if (/post|question|borrow|sell|lend/.test(ql)) reply = 'Use the + button on Home to create a Help Request, Question, Borrow, Sell or Lend/Give Away post.'; return res.json({ reply }); } const r = await fetch((process.env.AI_BASE_URL || 'https://api.openai.com/v1') + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.AI_API_KEY }, body: JSON.stringify({ model: process.env.AI_MODEL || 'gpt-4o-mini', messages: [{ role: 'system', content: 'You are UniHelp AI, a concise friendly university community assistant. Help students with campus/community questions. Do not invent official university policies.' }, { role: 'user', content: q }], temperature: .4 }) }); const j = await r.json(); res.json({ reply: j.choices?.[0]?.message?.content || 'I could not answer that right now.' }); } catch (e) { console.error(e); res.status(500).json({ reply: 'AI assistant is temporarily unavailable.' }); } });
+
+const unihelpAnswers = [
+    {
+        keywords: /forgot password|reset password|password/i,
+        reply: 'For password problems, use Forgot Password on the login page. If you still cannot access your account, type "report issue" to submit a support request.'
+    },
+    {
+        keywords: /help request|offer help|accept help|complete help/i,
+        reply: 'Create a Help Request post from Home. Other students can offer help, and you can accept an offer from Notifications. Once the help is finished, mark it as completed.'
+    },
+    {
+        keywords: /chat|message/i,
+        reply: 'Open Chats to communicate with other students. Messages are delivered in real time.'
+    },
+    {
+        keywords: /help points|trust score|rating|stars/i,
+        reply: 'After a help interaction is completed, the students involved can rate each other. Ratings affect Trust Score, and helpers earn Help Points.'
+    },
+    {
+        keywords: /post|question|borrow|sell|lend/i,
+        reply: 'Use the + button on Home to create a Help Request, Question, Borrow, Sell or Lend post.'
+    },
+    {
+        keywords: /profile|edit account|change password/i,
+        reply: 'Open your profile to update your account information. You can also change your password in account settings.'
+    }
+];
+
+const seriousIssuePattern =
+    /\b(harass(?:ment|ed|ing)?|threat(?:s|ened|ening)?|bully(?:ing|ied)?|stalk(?:ing|ed)?|assault|unsafe|hacked|account compromised|data breach|fraud|scam|emergency)\b/i;
+
+async function sendAdminAlert(query, student) {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+
+    await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: process.env.ADMIN_EMAIL,
+        subject: 'UniHelp: Serious student support report',
+        text: [
+            'A serious issue has been reported through UniHelp.',
+            '',
+            `Student: ${student.name}`,
+            `Email: ${student.email}`,
+            `Category: ${query.category}`,
+            `Report ID: ${query._id}`,
+            '',
+            'Student report:',
+            query.message,
+            '',
+            'Please review and follow up.'
+        ].join('\n')
+    });
+}
+
+
+async function askGroq(message, history = []) {
+    const safeHistory = Array.isArray(history)
+        ? history
+            .filter(item =>
+                item &&
+                ['user', 'assistant'].includes(item.role) &&
+                typeof item.content === 'string'
+            )
+            .slice(-10)
+            .map(item => ({
+                role: item.role,
+                content: item.content.slice(0, 2000)
+            }))
+        : [];
+
+    const response = await fetch(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'openai/gpt-oss-20b',
+                temperature: 0.4,
+                max_completion_tokens: 1500,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `
+You are UniHelp AI, the support assistant for UniHelp,
+a university community platform.
+
+ONLY answer questions related to UniHelp.
+
+UniHelp features:
+- Students can create Help Request, Question,
+  Borrow, Sell and Lend posts.
+- Students can offer help on posts.
+- Post owners can accept offers and mark help
+  interactions as completed.
+- Students can chat in real time.
+- Completed help interactions allow mutual
+  ratings from 1 to 5 stars.
+- Ratings affect Trust Score.
+- Helpers earn Help Points based on ratings.
+- Students can manage their profiles and passwords.
+- Students can report problems to the UniHelp team.
+
+Have natural conversations and answer follow-up questions
+using the previous messages.
+
+If a student asks something unrelated to UniHelp,
+politely explain that you only assist with UniHelp.
+
+If a student reports a problem you cannot resolve,
+ask them to use the Report an Issue button.
+
+For harassment, threats, account compromise or
+other serious concerns, direct them to the
+Report a Serious Issue button.
+
+Never claim a report has been submitted or an email
+has been sent unless the application confirms it.
+
+Never invent university policies or claim to have
+accessed student accounts, messages or records.
+
+Keep responses friendly, clear and reasonably short.
+`
+                    },
+                    ...safeHistory,
+                    {
+                        role: 'user',
+                        content: message
+                    }
+                ]
+            })
+        }
+    );
+
+    if (!response.ok) {
+        const error = await response.text();
+        console.error('GROQ API ERROR:', response.status, error);
+        throw new Error('Groq request failed');
+    }
+    const data = await response.json();
+
+    const choice = data.choices?.[0];
+    const reply = choice?.message?.content?.trim();
+
+    if (!reply) {
+        console.error('GROQ EMPTY RESPONSE:', {
+            finishReason: choice?.finish_reason,
+            usage: data.usage
+        });
+
+        throw new Error('Groq returned an empty response');
+    }
+
+    return reply;
+}
+
+app.post('/api/ai', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({
+                reply: 'Please log in to use UniHelp support.'
+            });
+        }
+
+        const message = String(req.body.message || '').trim();
+
+        if (!message || message.length > 2000) {
+            return res.status(400).json({
+                reply: 'Please enter a message of up to 2000 characters.'
+            });
+        }
+
+        const student = await User.findById(req.session.userId)
+            .select('name email');
+
+        if (!student) {
+            return res.status(401).json({
+                reply: 'Your session has expired. Please log in again.'
+            });
+        }
+
+        // A student can explicitly submit a report using:
+        // report issue: description of the problem
+        const reportMatch = message.match(
+            /^report (?:a )?(?:serious )?issue\s*:\s*([\s\S]+)/i
+        );
+
+        if (reportMatch) {
+            const description = reportMatch[1].trim();
+
+            if (description.length < 10) {
+                return res.json({
+                    reply: 'Please describe your issue in at least 10 characters.'
+                });
+            }
+
+            const isSerious =
+                /^report (?:a )?serious issue/i.test(message) ||
+                seriousIssuePattern.test(description);
+
+            const query = await SupportQuery.create({
+                user: student._id,
+                message: description,
+                category: isSerious ? 'Serious' : 'General'
+            });
+
+            if (isSerious) {
+                try {
+                    if (!process.env.ADMIN_EMAIL) {
+                        throw new Error('ADMIN_EMAIL is not configured.');
+                    }
+
+                    await sendAdminAlert(query, student);
+
+                    query.emailSent = true;
+                    await query.save();
+                } catch (emailError) {
+                    console.error(
+                        'SUPPORT ALERT EMAIL FAILED:',
+                        emailError
+                    );
+                }
+            }
+
+            return res.json({
+                reply: isSerious
+                    ? 'Your serious report has been saved. Our team will review it. If you are in immediate danger, contact campus security or local emergency services directly.'
+                    : 'Your support query has been saved. Our team can review it.'
+            });
+        }
+
+        if (/^report (?:a )?(?:serious )?issue$/i.test(message)) {
+            return res.json({
+                reply: 'To submit a report, type "report issue: " followed by a description. For an urgent concern, type "report serious issue: " followed by the details.'
+            });
+        }
+
+        // Automatically flag potentially serious messages.
+        // Ask for confirmation before saving a report.
+        if (seriousIssuePattern.test(message)) {
+            return res.json({
+                reply: 'This sounds like an issue that may need attention. To submit it to the UniHelp team, type "report serious issue: " followed by your description. If you are in immediate danger, contact campus security or local emergency services.'
+            });
+        }
+
+        const reply = await askGroq(
+            message,
+            req.body.history
+        );
+
+        return res.json({ reply });
+
+    } catch (error) {
+        console.error('UNIHELP SUPPORT ERROR:', error);
+
+        return res.status(500).json({
+            reply: 'UniHelp support is temporarily unavailable. Please try again.'
+        });
+    }
+});
 io.on('connection', socket => {
     const s = socket.request.session; if (!s?.userId) return; socket.join('user:' + s.userId); socket.on('joinChat', id => socket.join('chat:' + id)); socket.on('typing', data => socket.to('chat:' + data.conversationId).emit('typing', { name: s.user?.name || 'Student' }));
 
