@@ -360,14 +360,24 @@ body {
 .modal-card select,
 .auth-card input,
 .auth-card select,
-.bio-form textarea,
-.chat-input input {
+.bio-form textarea {
     border: 1px solid var(--line);
     border-radius: 13px;
     padding: 13px 14px;
     font: inherit;
     outline: 0;
-    background: #fff
+    background: #fff;
+}
+
+/* Chat message input */
+.chat-input #messageInput {
+    border: none;
+    border-radius: 0;
+    padding: 4px 0;
+    font: inherit;
+    outline: none;
+    background: transparent;
+    box-shadow: none;
 }
 
 .modal-card textarea {
@@ -620,37 +630,6 @@ body {
     color: var(--muted)
 }
 
-.messages {
-    flex: 1;
-    overflow: auto;
-    padding: 20px 0
-}
-
-.bubble {
-    max-width: 75%;
-    width: max-content;
-    background: #fff;
-    border: 1px solid var(--line);
-    padding: 11px 14px;
-    border-radius: 17px 17px 17px 5px;
-    margin: 8px 0;
-    box-shadow: 0 5px 20px rgba(30, 40, 80, .04)
-}
-
-.bubble.mine {
-    margin-left: auto;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 17px 17px 5px 17px
-}
-
-.bubble small {
-    display: block;
-    font-size: 9px;
-    opacity: .65;
-    margin-top: 4px
-}
-
 .chat-input {
     display: flex;
     gap: 8px;
@@ -669,9 +648,20 @@ body {
     border: 0;
     background: var(--accent);
     color: #fff;
-    border-radius: 11px;
-    width: 45px
+    border-radius: 12px;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+    cursor: pointer;
 }
+
 
 .typing {
     height: 20px;
@@ -1618,4 +1608,749 @@ body {
 
 .confirm-delete-btn {
     align-self: flex-start;
+}
+
+
+/* =====================================
+   UNIHELP LANDING PAGE
+   Matches the existing purple theme
+===================================== */
+
+.landing-page {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.landing-page * {
+    box-sizing: border-box;
+}
+
+/* NAVBAR */
+
+.landing-page .landing-navbar {
+    min-height: 72px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 12px max(24px, calc((100% - 1180px) / 2));
+    background: rgba(255, 255, 255, 0.94);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(18px);
+}
+
+.landing-page .landing-logo {
+    color: var(--ink);
+    font-size: 25px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.landing-page .landing-logo::first-letter {
+    color: var(--accent);
+}
+
+.landing-page .landing-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.landing-page .landing-nav-links a {
+    color: #596274;
+    padding: 10px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.landing-page .landing-nav-links a:hover {
+    background: #f0efff;
+    color: var(--accent);
+}
+
+.landing-page .landing-nav-links .join-btn {
+    background: linear-gradient(135deg,
+            var(--accent),
+            var(--accent2));
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: 0 7px 18px rgba(91, 76, 240, 0.18);
+}
+
+.landing-page .landing-nav-links .join-btn:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(91, 76, 240, 0.25);
+}
+
+/* HERO SECTION */
+
+.landing-page .landing-hero {
+    max-width: 1180px;
+    margin: 32px auto 0;
+    padding: 85px 45px;
+    text-align: center;
+    background: linear-gradient(135deg, #fff, #f0efff);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+}
+
+.landing-page .landing-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 15px;
+    border-radius: 30px;
+    background: #f0efff;
+    border: 1px solid #e4e0ff;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.landing-page .landing-hero h1 {
+    max-width: 850px;
+    margin: 26px auto 18px;
+    color: var(--ink);
+    font-size: clamp(38px, 5.5vw, 64px);
+    line-height: 1.08;
+    letter-spacing: -2.5px;
+    font-weight: 900;
+}
+
+.landing-page .landing-hero h1 span {
+    color: var(--accent);
+}
+
+.landing-page .landing-hero p {
+    max-width: 690px;
+    margin: 0 auto 30px;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.9;
+}
+
+/* BUTTONS */
+
+.landing-page .landing-hero .primary-btn,
+.landing-page .landing-cta .primary-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 14px 22px;
+    border: 0;
+    border-radius: 13px;
+    background: linear-gradient(135deg,
+            var(--accent),
+            var(--accent2));
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(91, 76, 240, 0.22);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing-page .landing-hero .primary-btn:hover,
+.landing-page .landing-cta .primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(91, 76, 240, 0.3);
+}
+
+.landing-page .landing-secondary-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 13px 21px;
+    margin-left: 10px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.landing-page .landing-secondary-btn:hover {
+    border-color: #c9c4ff;
+    background: #f8f7ff;
+    color: var(--accent);
+}
+
+/* COMMON SECTION STYLING */
+
+.landing-page .landing-section {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 76px 24px;
+}
+
+.landing-page .landing-section-heading {
+    max-width: 720px;
+    margin: 0 auto 38px;
+    text-align: center;
+}
+
+.landing-page .landing-section-heading h2 {
+    margin: 0 0 13px;
+    color: var(--ink);
+    font-size: clamp(27px, 4vw, 36px);
+    font-weight: 900;
+    letter-spacing: -1.2px;
+}
+
+.landing-page .landing-section-heading p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* ABOUT SECTION */
+
+.landing-page .landing-about {
+    max-width: 850px;
+    margin: 0 auto;
+    padding: 30px 35px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 8px 30px rgba(30, 40, 80, 0.045);
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.9;
+}
+
+.landing-page .landing-about p {
+    margin: 0 0 15px;
+}
+
+.landing-page .landing-about p:last-child {
+    margin-bottom: 0;
+    color: var(--ink);
+    font-weight: 600;
+}
+
+/* FEATURES SECTION */
+
+.landing-page .landing-mission {
+    max-width: none;
+    padding: 76px max(24px, calc((100% - 1132px) / 2));
+    background: #f0efff;
+    border-top: 1px solid #e8e5ff;
+    border-bottom: 1px solid #e8e5ff;
+}
+
+.landing-page .landing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.landing-page .landing-card {
+    min-width: 0;
+    padding: 26px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 8px 30px rgba(30, 40, 80, 0.045);
+    transition: transform 0.22s ease, box-shadow 0.22s ease,
+        border-color 0.22s ease;
+}
+
+.landing-page .landing-card:hover {
+    transform: translateY(-4px);
+    border-color: #d5d0ff;
+    box-shadow: 0 18px 40px rgba(30, 40, 80, 0.09);
+}
+
+.landing-page .landing-icon {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 19px;
+    border-radius: 17px;
+    background: #f0efff;
+    font-size: 27px;
+}
+
+.landing-page .landing-card h3 {
+    margin: 0 0 11px;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+}
+
+.landing-page .landing-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+/* MISSION AND VISION CARDS */
+
+.landing-page .landing-mission-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.landing-page .landing-mission-grid .landing-card {
+    padding: 32px;
+}
+
+/* FINAL CALL TO ACTION */
+
+.landing-page .landing-cta {
+    max-width: 1132px;
+    margin: 20px auto 75px;
+    padding: 60px 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    background: linear-gradient(135deg,
+            #30267f,
+            var(--accent),
+            var(--accent2));
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(91, 76, 240, 0.2);
+}
+
+.landing-page .landing-cta h2 {
+    margin: 0 0 15px;
+    color: #fff;
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.landing-page .landing-cta p {
+    max-width: 620px;
+    margin: 0 auto 27px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 15px;
+    line-height: 1.9;
+}
+
+.landing-page .landing-cta .primary-btn {
+    background: #fff;
+    color: var(--accent);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* FOOTER */
+
+.landing-page .landing-footer {
+    padding: 25px 20px;
+    border-top: 1px solid var(--line);
+    background: #fff;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.landing-page .landing-footer p {
+    margin: 0;
+    line-height: 1.8;
+}
+
+/* ACCESSIBILITY */
+
+.landing-page a:focus-visible {
+    outline: 3px solid var(--accent2);
+    outline-offset: 4px;
+}
+
+/* RESPONSIVE DESIGN */
+
+@media (max-width: 900px) {
+    .landing-page .landing-navbar {
+        padding: 14px 24px;
+    }
+
+    .landing-page .landing-hero {
+        margin: 20px 18px 0;
+        padding: 70px 28px;
+    }
+
+    .landing-page .landing-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .landing-page .landing-mission {
+        padding: 65px 24px;
+    }
+
+    .landing-page .landing-cta {
+        margin: 20px 24px 60px;
+    }
+}
+
+@media (max-width: 600px) {
+    .landing-page .landing-navbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px 18px;
+    }
+
+    .landing-page .landing-nav-links {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 3px;
+    }
+
+    .landing-page .landing-nav-links a {
+        padding: 9px 10px;
+        font-size: 13px;
+    }
+
+    .landing-page .landing-nav-links .join-btn {
+        padding: 10px 12px;
+    }
+
+    .landing-page .landing-hero {
+        margin: 14px 12px 0;
+        padding: 54px 20px;
+        border-radius: 22px;
+    }
+
+    .landing-page .landing-hero h1 {
+        font-size: clamp(35px, 9vw, 46px);
+        letter-spacing: -1.7px;
+    }
+
+    .landing-page .landing-hero p {
+        font-size: 14px;
+        line-height: 1.8;
+    }
+
+    .landing-page .landing-hero .primary-btn,
+    .landing-page .landing-secondary-btn {
+        width: 100%;
+        margin: 6px 0;
+    }
+
+    .landing-page .landing-section {
+        padding: 55px 18px;
+    }
+
+    .landing-page .landing-section-heading {
+        margin-bottom: 28px;
+    }
+
+    .landing-page .landing-about {
+        padding: 23px 20px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .landing-page .landing-mission {
+        padding: 55px 18px;
+    }
+
+    .landing-page .landing-grid,
+    .landing-page .landing-mission-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .landing-page .landing-card {
+        padding: 23px;
+        border-radius: 19px;
+    }
+
+    .landing-page .landing-cta {
+        margin: 12px 14px 45px;
+        padding: 43px 22px;
+        border-radius: 22px;
+    }
+
+    .landing-page .landing-cta .primary-btn {
+        width: 100%;
+    }
+}
+
+/* Match landing page logo with the main website */
+.landing-page .landing-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 22px;
+}
+
+.landing-page .landing-brand .logo-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.landing-page .landing-brand .logo-mark>span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.landing-page .landing-brand>span:last-child>span {
+    color: var(--accent);
+}
+
+/* Chat input */
+.chat-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Input area */
+.chat-input-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #f1f1f1;
+    border-radius: 24px;
+    padding: 10px 14px;
+    box-sizing: border-box;
+}
+
+/* Attachment preview inside the input */
+#attachmentPreview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    max-width: 100%;
+}
+
+#attachmentPreview[hidden] {
+    display: none;
+}
+
+#attachmentThumbnail {
+    display: none;
+    width: 85px;
+    height: 65px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+#attachmentName {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+#removeAttachment {
+    border: none;
+    background: #dedede;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Text entry */
+#messageInput {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 28px;
+    max-height: 120px;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    font: inherit;
+    padding: 4px 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* Keep the attachment and send buttons compact */
+#attachmentButton,
+#sendMessageButton {
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+
+.chat-message-image {
+    display: block;
+    max-width: 220px;
+    max-height: 220px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: zoom-in;
+}
+
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.image-lightbox[hidden] {
+    display: none;
+}
+
+.image-lightbox img {
+    max-width: 95vw;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+#closeImageLightbox {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: white;
+    color: #222;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* ==============================
+   CHAT MESSAGES CONTAINER
+============================== */
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+/* ==============================
+   MESSAGE BUBBLES
+============================== */
+
+.messages .bubble {
+    display: block;
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: 75%;
+    min-width: 0;
+    height: auto;
+    box-sizing: border-box;
+
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 11px 14px;
+    margin: 4px 0;
+
+    border-radius: 17px 17px 17px 5px;
+    box-shadow: 0 5px 20px rgba(30, 40, 80, .04);
+
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* Messages sent by the current user */
+
+.messages .bubble.mine {
+    align-self: flex-end;
+    margin-left: 0;
+
+    background: var(--accent);
+    color: #fff;
+
+    border-radius: 17px 17px 5px 17px;
+}
+
+/* ==============================
+   MESSAGE TEXT
+============================== */
+
+.messages .bubble .message-text {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.4;
+}
+
+/* ==============================
+   IMAGE ATTACHMENTS
+============================== */
+
+.messages .bubble img {
+    display: block;
+
+    width: auto;
+    height: auto;
+    max-width: 220px;
+    max-height: 220px;
+
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* ==============================
+   MESSAGE TIMESTAMP
+============================== */
+
+.messages .bubble small {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+
+    margin-top: 4px;
+
+    font-size: 9px;
+    line-height: 1.2;
+    opacity: .65;
+
+    overflow-wrap: anywhere;
 }

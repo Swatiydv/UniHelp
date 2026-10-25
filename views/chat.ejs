@@ -22,8 +22,8 @@
                     <b>
                         <%= other ? other.name : 'Deleted User' %>
                     </b>
-                    <small>
-                        <%= other ? 'Online chat' : 'Account deleted' %>
+                    <small id="presenceStatus" data-user-id="<%= other ? other._id : '' %>">
+                        <%= other ? 'Checking status…' : 'Account deleted' %>
                     </small>
                 </div>
             </div>
@@ -31,22 +31,68 @@
             <div class="messages" id="messages">
                 <% messages.forEach(m=> { %>
                     <div class="bubble <%= m.sender && m.sender._id.toString() === user.id ? 'mine' : '' %>">
-                        <%= m.text %>
 
-                            <small>
-                                <%= new Date(m.createdAt).toLocaleString([], { day: '2-digit' , month: 'short' ,
-                                    year: 'numeric' , hour: '2-digit' , minute: '2-digit' }) %>
-                            </small>
+                        <% if (m.attachment) { %>
+                            <% if (m.attachment.mimetype && m.attachment.mimetype.startsWith('image/')) { %>
+                                <img src="/api/attachments/<%= m._id %>" alt="<%= m.attachment.originalName %>"
+                                    style="display:block; max-width:220px; max-height:220px; width:auto; height:auto; object-fit:contain; border-radius:8px; margin-bottom:8px;"
+                                    loading="lazy">
+                                <% } else { %>
+                                    <a href="/api/attachments/<%= m._id %>">
+                                        📄 <%= m.attachment.originalName %>
+                                    </a>
+                                    <% } %>
+                                        <% } %>
+
+
+                                            <% if (m.text) { %>
+                                                <div class="message-text">
+                                                    <%= m.text %>
+                                                </div>
+                                                <% } %>
+
+                                                    <small>
+                                                        <%= new Date(m.createdAt).toLocaleString([], { day: '2-digit' ,
+                                                            month: 'short' , year: 'numeric' , hour: '2-digit' ,
+                                                            minute: '2-digit' }) %>
+                                                    </small>
+
                     </div>
                     <% }) %>
             </div>
-
             <div id="typing" class="typing"></div>
 
             <% if (other) { %>
-                <form class="chat-input" id="chatForm">
-                    <input id="messageInput" autocomplete="off" placeholder="Write a message...">
-                    <button>➤</button>
+                <form class="chat-input" id="chatForm" enctype="multipart/form-data">
+
+                    <input type="file" id="attachmentInput"
+                        accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        multiple hidden>
+
+                    <button type="button" id="attachmentButton" title="Attach a file">
+                        📎
+                    </button>
+
+                    <div class="chat-input-content">
+
+                        <!-- Image preview appears at the top -->
+                        <div id="attachmentPreview" hidden>
+                            <img id="attachmentThumbnail" alt="Selected image preview">
+
+                            <span id="attachmentName"></span>
+
+                            <button type="button" id="removeAttachment" aria-label="Remove attachment"
+                                title="Remove attachment">✕</button>
+                        </div>
+
+                        <!-- Type your caption underneath the preview -->
+                        <textarea id="messageInput" autocomplete="off" placeholder="Write a message..."
+                            rows="1"></textarea>
+
+                    </div>
+
+                    <button type="submit" id="sendMessageButton">➤</button>
+
                 </form>
                 <% } else { %>
                     <p class="muted">
@@ -55,62 +101,228 @@
                     </p>
                     <% } %>
         </main>
-
+        <div id="imageLightbox" class="image-lightbox" hidden>
+            <button type="button" id="closeImageLightbox" aria-label="Close image">✕</button>
+            <img id="lightboxImage" alt="Full-size image">
+        </div>
         <script>
-            const socket = io();
+            const socket = window.unihelpSocket || io();
             const cid = '<%= conversation._id %>';
+            const presenceStatus = document.getElementById('presenceStatus');
+            const otherUserId = presenceStatus?.dataset.userId;
+
+            function updatePresence(isOnline) {
+                if (!presenceStatus || !otherUserId) return;
+
+                presenceStatus.textContent = isOnline ? 'Online' : 'Offline';
+                presenceStatus.classList.toggle('online', isOnline);
+                presenceStatus.classList.toggle('offline', !isOnline);
+            }
+
+            socket.on('userStatus', data => {
+                if (data.userId === otherUserId) {
+                    updatePresence(data.online);
+                }
+            });
+
+            if (otherUserId) {
+                socket.emit('checkUserStatus', otherUserId);
+            }
 
             socket.emit('joinChat', cid);
 
             const box = document.getElementById('messages');
             const chatForm = document.getElementById('chatForm');
+            const messageInput = document.getElementById('messageInput');
+            const attachmentInput = document.getElementById('attachmentInput');
+            const attachmentButton = document.getElementById('attachmentButton');
+            const attachmentPreview = document.getElementById('attachmentPreview');
+            const attachmentThumbnail = document.getElementById('attachmentThumbnail');
+            const attachmentName = document.getElementById('attachmentName');
+            const removeAttachment = document.getElementById('removeAttachment');
+            // Track preview object URLs so they can be released.
+            let previewObjectUrls = [];
 
+            // Open the file picker.
+            attachmentButton.onclick = () => attachmentInput.click();
+
+            // Preview all selected attachments.
+            attachmentInput.onchange = () => {
+                const files = Array.from(attachmentInput.files);
+
+                if (!files.length) {
+                    clearAttachment();
+                    return;
+                }
+
+                // Show all selected filenames.
+                attachmentName.textContent = files
+                    .map(file => file.name)
+                    .join(', ');
+
+                attachmentPreview.hidden = false;
+
+                // Release previous preview URLs.
+                previewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+                previewObjectUrls = [];
+
+                // Display the first selected image, if available.
+                const firstImage = files.find(file =>
+                    file.type.startsWith('image/')
+                );
+
+                if (firstImage) {
+                    const url = URL.createObjectURL(firstImage);
+                    previewObjectUrls.push(url);
+
+                    attachmentThumbnail.src = url;
+                    attachmentThumbnail.style.display = 'block';
+                } else {
+                    attachmentThumbnail.removeAttribute('src');
+                    attachmentThumbnail.style.display = 'none';
+                }
+            };
+
+            // Clear selected attachments and previews.
+            function clearAttachment() {
+                attachmentInput.value = '';
+                attachmentName.textContent = '';
+                attachmentPreview.hidden = true;
+
+                attachmentThumbnail.removeAttribute('src');
+                attachmentThumbnail.style.display = 'none';
+
+                previewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+                previewObjectUrls = [];
+            }
+
+            removeAttachment.onclick = clearAttachment;
+
+            // Send text messages and multiple attachments.
             if (chatForm) {
-                chatForm.onsubmit = e => {
+                chatForm.onsubmit = async e => {
                     e.preventDefault();
 
-                    const input = document.getElementById('messageInput');
+                    const text = messageInput.value.trim();
+                    const files = Array.from(attachmentInput.files);
 
-                    if (input.value.trim()) {
-                        socket.emit('sendMessage', {
-                            conversationId: cid,
-                            text: input.value
-                        });
+                    if (!text && !files.length) return;
 
-                        input.value = '';
+                    // Upload each attachment separately because the backend
+                    // uses uploadChatFile.single('attachment').
+                    if (files.length) {
+                        attachmentButton.disabled = true;
+
+                        let successfulUploads = 0;
+                        let failedUploads = [];
+
+                        try {
+                            for (let i = 0; i < files.length; i++) {
+                                const file = files[i];
+                                const formData = new FormData();
+
+                                formData.append('attachment', file);
+
+                                // Send the caption with the first file only.
+                                if (i === 0) {
+                                    formData.append('text', text);
+                                } else {
+                                    formData.append('text', '');
+                                }
+
+                                try {
+                                    const response = await fetch(
+                                        `/api/conversations/${cid}/attachments`,
+                                        {
+                                            method: 'POST',
+                                            body: formData
+                                        }
+                                    );
+
+                                    const result = await response.json();
+
+                                    if (!response.ok) {
+                                        failedUploads.push(
+                                            `${file.name}: ${result.error || 'Upload failed.'}`
+                                        );
+                                        continue;
+                                    }
+
+                                    successfulUploads++;
+                                } catch (error) {
+                                    console.error(
+                                        `Upload failed for ${file.name}:`,
+                                        error
+                                    );
+
+                                    failedUploads.push(
+                                        `${file.name}: Could not upload this file.`
+                                    );
+                                }
+                            }
+
+                            // Clear the caption after it has been sent with the first
+                            // successful request, or if all uploads have completed.
+                            if (successfulUploads > 0) {
+                                messageInput.value = '';
+                            }
+
+                            if (failedUploads.length === 0) {
+                                clearAttachment();
+                            } else {
+                                alert(
+                                    `${successfulUploads} of ${files.length} file(s) uploaded.\n\n` +
+                                    failedUploads.join('\n') +
+                                    '\n\nPlease select and retry the failed files.'
+                                );
+
+                                // Keep only failed files selected so they can be retried.
+                                const failedNames = new Set(
+                                    failedUploads.map(item =>
+                                        item.substring(0, item.indexOf(':'))
+                                    )
+                                );
+
+                                const remainingFiles = files.filter(file =>
+                                    failedNames.has(file.name)
+                                );
+
+                                // Browsers do not allow assigning files directly to a
+                                // file input. Clear the input and ask the user to
+                                // reselect failed files.
+                                clearAttachment();
+
+                                if (remainingFiles.length) {
+                                    attachmentName.textContent =
+                                        'Please reselect: ' +
+                                        remainingFiles.map(file => file.name).join(', ');
+                                }
+                            }
+                        } finally {
+                            attachmentButton.disabled = false;
+                        }
+
+                        return;
                     }
+
+                    // Send a regular text-only message.
+                    socket.emit('sendMessage', {
+                        conversationId: cid,
+                        text
+                    });
+
+                    messageInput.value = '';
                 };
 
-                document.getElementById('messageInput').oninput = () => {
+                messageInput.oninput = () => {
                     socket.emit('typing', {
                         conversationId: cid
                     });
                 };
             }
 
-            socket.on('newMessage', m => {
-                const d = document.createElement('div');
-
-                d.className = 'bubble ' +
-                    (m.sender === '<%= user.id %>' ? 'mine' : '');
-
-                d.innerHTML = '<span></span><small></small>';
-
-                d.querySelector('span').textContent = m.text;
-
-                d.querySelector('small').textContent =
-                    new Date(m.createdAt).toLocaleString([], {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-
-                box.appendChild(d);
-                box.scrollTop = box.scrollHeight;
-            });
-
+            // Receive new text messages and attachments
+            socket.on('newMessage', renderMessage);
             socket.on('typing', x => {
                 const typing = document.getElementById('typing');
 
@@ -120,7 +332,41 @@
                     typing.textContent = '';
                 }, 1200);
             });
+
+            const imageLightbox = document.getElementById('imageLightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const closeImageLightbox = document.getElementById('closeImageLightbox');
+
+            box.addEventListener('click', event => {
+                if (event.target.matches('.chat-message-image')) {
+                    lightboxImage.src = event.target.src;
+                    imageLightbox.hidden = false;
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+
+            function closeLightbox() {
+                imageLightbox.hidden = true;
+                lightboxImage.removeAttribute('src');
+                document.body.style.overflow = '';
+            }
+
+            closeImageLightbox.addEventListener('click', closeLightbox);
+
+            imageLightbox.addEventListener('click', event => {
+                if (event.target === imageLightbox) {
+                    closeLightbox();
+                }
+            });
+
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !imageLightbox.hidden) {
+                    closeLightbox();
+                }
+            });
         </script>
+
+
 </body>
 
 </html>

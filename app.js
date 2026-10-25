@@ -14,9 +14,52 @@ const Conversation = require('./models/conversation');
 const Message = require('./models/message');
 const SupportQuery = require('./models/supportQuery');
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const multer = require('multer');
+const crypto = require('crypto');
 const app = express();
 const server = http.createServer(app); const io = new Server(server);
 const PORT = process.env.PORT || 3000;
+const chatUploadsDir = path.join(__dirname, 'private_uploads', 'chat');
+
+fs.mkdirSync(chatUploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, chatUploadsDir);
+    },
+
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, crypto.randomUUID() + ext);
+    }
+});
+
+const allowedMimeTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/pdf',
+    'text/plain',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+]);
+
+const uploadChatFile = multer({
+    storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if (!allowedMimeTypes.has(file.mimetype)) {
+            return cb(new Error('File type not allowed.'));
+        }
+
+        cb(null, true);
+    }
+});
+
 app.set('view engine', 'ejs'); app.set('views', path.join(__dirname, 'views'));
 app.set('io', io);
 app.use(express.urlencoded({ extended: true })); app.use(express.json());
@@ -24,13 +67,238 @@ app.use(express.static(path.join(__dirname, 'public')));
 const sessionMiddleware = session({ secret: process.env.SESSION_SECRET || 'unihelp-dev-secret', resave: false, saveUninitialized: false, cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } });
 app.use(sessionMiddleware);
 io.engine.use(sessionMiddleware);
+// Upload media to a chat conversation
+app.post(
+    '/api/conversations/:id/attachments',
+    (req, res, next) => {
+        if (!req.session.userId) {
+            return res.status(401).json({
+                error: 'Please log in first.'
+            });
+        }
+
+        next();
+    },
+    uploadChatFile.single('attachment'),
+    async (req, res) => {
+        let uploadedPath = req.file?.path;
+
+        try {
+            const conversationId = req.params.id;
+            const userId = String(req.session.userId);
+
+            if (!mongoose.isValidObjectId(conversationId)) {
+                if (uploadedPath) fs.unlinkSync(uploadedPath);
+
+                return res.status(400).json({
+                    error: 'Invalid conversation.'
+                });
+            }
+
+            const conversation = await Conversation.findById(conversationId);
+
+            if (
+                !conversation ||
+                !conversation.participants.some(
+                    id => String(id) === userId
+                )
+            ) {
+                if (uploadedPath) fs.unlinkSync(uploadedPath);
+
+                return res.status(403).json({
+                    error: 'You cannot access this conversation.'
+                });
+            }
+
+            const sender = await User.findById(userId);
+
+            if (!sender) {
+                if (uploadedPath) fs.unlinkSync(uploadedPath);
+
+                return res.status(401).json({
+                    error: 'User account not found.'
+                });
+            }
+
+            const otherId = conversation.participants.find(
+                id => String(id) !== userId
+            );
+
+            if (!otherId || !(await User.findById(otherId))) {
+                if (uploadedPath) fs.unlinkSync(uploadedPath);
+
+                return res.status(400).json({
+                    error: 'The other account is unavailable.'
+                });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    error: 'Please select a file.'
+                });
+            }
+            const text = String(req.body.text || '').trim();
+
+            if (text.length > 2000) {
+                if (uploadedPath) fs.unlinkSync(uploadedPath);
+                return res.status(400).json({
+                    error: 'Message text cannot exceed 2000 characters.'
+                });
+            }
+
+            const message = await Message.create({
+                conversation: conversation._id,
+                sender: userId,
+                text: text,
+                attachment: {
+                    filename: req.file.filename,
+                    originalName: path.basename(req.file.originalname),
+                    mimetype: req.file.mimetype,
+                    size: req.file.size,
+                    path: req.file.filename
+                }
+            });
+
+            uploadedPath = null; // The file now belongs to the saved message.
+
+            conversation.lastMessage = text || `📎 ${message.attachment.originalName}`;
+            conversation.lastMessageAt = new Date();
+
+            conversation.unreadFor = Array.from(
+                new Set([
+                    ...(conversation.unreadFor || []).map(String),
+                    String(otherId)
+                ])
+            );
+
+            await conversation.save();
+
+            const payload = {
+                _id: String(message._id),
+                text: message.text,
+                sender: userId,
+                createdAt: message.createdAt,
+                attachment: {
+                    originalName: message.attachment.originalName,
+                    mimetype: message.attachment.mimetype,
+                    size: message.attachment.size,
+                    url: `/api/attachments/${message._id}`
+                }
+            };
+
+            io.to('chat:' + conversation._id).emit('newMessage', payload);
+
+            io.to('user:' + otherId).emit('chatPing', {
+                conversationId: conversation._id
+            });
+
+            return res.json({ message: payload });
+        } catch (error) {
+            if (uploadedPath && fs.existsSync(uploadedPath)) {
+                fs.unlinkSync(uploadedPath);
+            }
+
+            console.error('CHAT ATTACHMENT ERROR:', error);
+
+            return res.status(500).json({
+                error: 'Could not upload the attachment.'
+            });
+        }
+    },
+    (error, req, res, next) => {
+        if (error instanceof multer.MulterError) {
+            return res.status(400).json({
+                error: error.code === 'LIMIT_FILE_SIZE'
+                    ? 'Files must be 10 MB or smaller.'
+                    : 'The upload could not be completed.'
+            });
+        }
+
+        if (error) {
+            return res.status(400).json({
+                error: error.message || 'Invalid file.'
+            });
+        }
+
+        next();
+    }
+);
+// Securely access chat attachments
+app.get('/api/attachments/:messageId', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).send('Please log in first.');
+        }
+
+        const { messageId } = req.params;
+
+        if (!mongoose.isValidObjectId(messageId)) {
+            return res.status(400).send('Invalid attachment.');
+        }
+
+        const message = await Message.findById(messageId);
+
+        if (!message || !message.attachment) {
+            return res.status(404).send('Attachment not found.');
+        }
+
+        const conversation = await Conversation.findById(
+            message.conversation
+        );
+
+        const userId = String(req.session.userId);
+
+        if (
+            !conversation ||
+            !conversation.participants.some(
+                id => String(id) === userId
+            )
+        ) {
+            return res.status(403).send('Access denied.');
+        }
+
+        const filePath = path.join(
+            chatUploadsDir,
+            message.attachment.filename
+        );
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).send('File not found.');
+        }
+
+        res.set('X-Content-Type-Options', 'nosniff');
+        res.set('Cache-Control', 'private, no-store');
+
+        const isImage = message.attachment.mimetype.startsWith('image/');
+
+        if (isImage) {
+            res.type(message.attachment.mimetype);
+            return res.sendFile(filePath);
+        }
+
+        return res.download(
+            filePath,
+            path.basename(message.attachment.originalName)
+        );
+
+    } catch (error) {
+        console.error('ATTACHMENT DOWNLOAD ERROR:', error);
+        return res.status(500).send('Could not retrieve attachment.');
+    }
+});
 app.use(async (req, res, next) => { res.locals.user = req.session.user || null; next(); });
 app.use(require('./routes/user'));
 app.use(require('./routes/posts'));
 app.use(require('./routes/chat'));
 app.use(require('./routes/notifications'));
 app.use(require('./routes/admin'));
-app.get('/', (req, res) => res.redirect(req.session.userId ? '/home' : '/login'));
+app.get('/', (req, res) => {
+    if (req.session.userId) {
+        return res.redirect('/home');
+    }
+
+    res.render('index');
+});
 app.get('/home', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
 
@@ -65,7 +333,19 @@ app.get('/api/unread', async (req, res) => { if (!req.session.userId) return res
 app.get('/chat/:id', async (req, res) => {
     if (!req.session.userId) return res.redirect('/login'); const c = await Conversation.findById(req.params.id).populate('participants', 'name avatar'); if (!c || !c.participants.some(x => x._id.toString() === req.session.userId)) return res.status(403).send('Not allowed'); const other = c.participants.find(
         x => x && x._id.toString() !== req.session.userId
-    ) || null; const messages = await Message.find({ conversation: c._id }).populate('sender', 'name').sort({ createdAt: 1 }); c.unreadFor = (c.unreadFor || []).filter(x => x.toString() !== req.session.userId); await c.save(); res.render('chat', { conversation: c, other, messages });
+    ) || null;
+    const messages = await Message.find({ conversation: c._id })
+        .populate('sender', 'name')
+        .sort({ createdAt: 1 })
+        .lean();
+
+    messages.forEach(m => {
+        if (m.attachment) {
+            m.attachment.url = `/api/attachments/${m._id}`;
+        }
+    });
+    c.unreadFor = (c.unreadFor || []).filter(x => x.toString() !== req.session.userId); await c.save();
+    res.render('chat', { conversation: c, other, messages });
 });
 app.get('/chats', async (req, res) => { if (!req.session.userId) return res.redirect('/login'); const cs = await Conversation.find({ participants: req.session.userId }).populate('participants', 'name avatar').sort({ updatedAt: -1 }); res.render('chats', { conversations: cs }); });
 app.get('/notifications', async (req, res) => { if (!req.session.userId) return res.redirect('/login'); const ns = await Notification.find({ user: req.session.userId }).populate('actor', 'name avatar').sort({ createdAt: -1 }).limit(100).lean(); const helpIds = ns.filter(n => n.helpId).map(n => n.helpId); const hs = helpIds.length ? await require('./models/help').find({ _id: { $in: helpIds } }).select('_id status').lean() : []; const map = new Map(hs.map(h => [String(h._id), h.status])); ns.forEach(n => { if (n.helpId) n.helpStatus = map.get(String(n.helpId)) || 'Requested'; }); await Notification.updateMany({ user: req.session.userId }, { $set: { read: true } }); res.render('notifications', { notifications: ns }); });
@@ -340,8 +620,87 @@ app.post('/api/ai', async (req, res) => {
         });
     }
 });
+// Track active Socket.IO connections for each user.
+const onlineUsers = new Map();
+
+function setUserOnline(userId, socketId) {
+    const id = String(userId);
+
+    if (!onlineUsers.has(id)) {
+        onlineUsers.set(id, new Set());
+    }
+
+    onlineUsers.get(id).add(socketId);
+}
+
+function setUserOffline(userId, socketId) {
+    const id = String(userId);
+    const sockets = onlineUsers.get(id);
+
+    if (!sockets) return false;
+
+    sockets.delete(socketId);
+
+    if (sockets.size === 0) {
+        onlineUsers.delete(id);
+        return true;
+    }
+
+    return false;
+}
 io.on('connection', socket => {
-    const s = socket.request.session; if (!s?.userId) return; socket.join('user:' + s.userId); socket.on('joinChat', id => socket.join('chat:' + id)); socket.on('typing', data => socket.to('chat:' + data.conversationId).emit('typing', { name: s.user?.name || 'Student' }));
+    const s = socket.request.session;
+
+    if (!s?.userId) return;
+
+    const userId = String(s.userId);
+
+    socket.join('user:' + userId);
+
+    // Mark user online
+    const wasOffline = !onlineUsers.has(userId);
+
+    setUserOnline(userId, socket.id);
+
+
+
+    // Notify other users when this user comes online
+    if (wasOffline) {
+        socket.broadcast.emit('userStatus', {
+            userId,
+            online: true
+        });
+    }
+
+    // Mark user offline after their last connection closes
+    socket.on('disconnect', () => {
+        const wentOffline = setUserOffline(userId, socket.id);
+
+        if (wentOffline) {
+            socket.broadcast.emit('userStatus', {
+                userId,
+                online: false
+            });
+        }
+    });
+    socket.on('checkUserStatus', async targetUserId => {
+        try {
+            if (!mongoose.isValidObjectId(targetUserId)) return;
+
+            const conversation = await Conversation.findOne({
+                participants: { $all: [userId, targetUserId], $size: 2 }
+            });
+
+            if (!conversation) return;
+            socket.emit('userStatus', {
+                userId: String(targetUserId),
+                online: onlineUsers.has(String(targetUserId))
+            });
+        } catch (error) {
+            console.error('PRESENCE CHECK ERROR:', error);
+        }
+    });
+    socket.on('joinChat', id => socket.join('chat:' + id)); socket.on('typing', data => socket.to('chat:' + data.conversationId).emit('typing', { name: s.user?.name || 'Student' }));
 
     socket.on('sendMessage', async data => {
         try {
