@@ -38,12 +38,24 @@ router.post('/signup', async (req, res) => {
             name,
             email,
             password,
+            confirmPassword,
             department,
             year
         } = req.body;
 
         const cleanEmail = (email || '').toLowerCase().trim();
-
+        // Check whether passwords match
+        if (password !== confirmPassword) {
+            return res.status(400).render('signup', {
+                error: 'Passwords do not match. Please try again.',
+                form: {
+                    name: name || '',
+                    email: email || '',
+                    department: department || '',
+                    year: year || ''
+                }
+            });
+        }
         const form = {
             name: name || '',
             email: email || '',
@@ -256,7 +268,7 @@ router.post('/login', async (req, res) => {
 
     res.redirect('/home');
 });
-router.post('/logout', (req, res) => req.session.destroy(() => res.redirect('/login')));
+router.post('/logout', (req, res) => req.session.destroy(() => res.redirect('/')));
 router.get('/forgot-password', (req, res) => res.render('forgot', { error: null, message: null }));
 router.post('/forgot-password', async (req, res) => {
     try {

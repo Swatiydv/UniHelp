@@ -22,7 +22,12 @@
 
                     <a class="chat-row" href="/chat/<%= c._id %>">
                         <span class="avatar">
-                            <%= other?.name?.[0]?.toUpperCase() || 'D' %>
+                            <% if (other?.avatar) { %>
+                                <img src="<%= other.avatar %>" alt="<%= other.name || 'User' %>"
+                                    class="chat-profile-photo">
+                                <% } else { %>
+                                    <%= other?.name?.[0]?.toUpperCase() || 'D' %>
+                                        <% } %>
                         </span>
 
                         <div>

@@ -1,1 +1,283 @@
-<!doctype html><html><head><title>Join UniHelp</title><%- include('partials/head') %></head><body class="auth-page"><div class="auth-card wide"><a class="brand big" href="/"><span class="logo-mark"><span>U</span></span><span>Uni<span>Help</span></span></a><h1>Join your campus</h1><p class="muted">Create your student community account.</p><% if(error){%><div class="alert"><%=error%></div><%}%><form method="post" action="/signup" id="signupForm"><div class="grid2"><label>Full name<input name="name" value="<%=form?.name||''%>" required minlength="2"></label><label>Email<input type="email" name="email" value="<%=form?.email||''%>" required></label><label>Department<input name="department" value="<%=form?.department||''%>"></label><label>Year<input name="year" value="<%=form?.year||''%>" placeholder="e.g. 2nd Year"></label></div><label>Password<input id="pw" type="password" name="password" required><small id="pwHelp">8+ chars · uppercase · lowercase · number · special character</small></label><button class="primary">Create account</button></form><p class="switch">Already a member? <a href="/login">Login</a></p></div><script src="/js/auth.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Join UniHelp</title>
+    <%- include('partials/head') %>
+</head>
+
+<body class="auth-page signup-page">
+
+    <div class="auth-layout signup-layout">
+
+        <!-- Left welcome panel -->
+        <section class="auth-welcome signup-welcome">
+
+            <a class="brand big" href="/login">
+                <span class="logo-mark"><span>U</span></span>
+                <span>Uni<span>Help</span></span>
+            </a>
+
+            <div class="welcome-content">
+                <span class="welcome-tag">YOUR CAMPUS, CONNECTED</span>
+
+                <h1>
+                    Your campus.<br>
+                    Your community.<br>
+                    <span>Your UniHelp.</span>
+                </h1>
+
+                <p>
+                    One community, countless ways to help.
+                    Join students who share resources, support each other,
+                    and make campus life better together.
+                </p>
+
+                <div class="welcome-benefits">
+                    <div class="benefit">
+                        <span class="benefit-icon">↗</span>
+                        <div>
+                            <strong>Share resources</strong>
+                            <small>Give things a second life by sharing with students.</small>
+                        </div>
+                    </div>
+
+                    <div class="benefit">
+                        <span class="benefit-icon">♡</span>
+                        <div>
+                            <strong>Find the help you need</strong>
+                            <small>Connect with people who understand campus life.</small>
+                        </div>
+                    </div>
+
+                    <div class="benefit">
+                        <span class="benefit-icon">✦</span>
+                        <div>
+                            <strong>Build your community</strong>
+                            <small>Help each other grow through small acts of kindness.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="welcome-footer">Better together. Built for students. 💜</p>
+
+        </section>
+
+        <!-- Right signup panel -->
+        <main class="auth-form-panel signup-form-panel">
+
+            <div class="auth-card signup-card">
+
+                <div class="form-heading">
+                    <span class="form-eyebrow">GET STARTED — IT'S FREE</span>
+                    <h2>Join your campus</h2>
+                    <p class="muted">Create your student community account.</p>
+                </div>
+
+                <% if (typeof error !=='undefined' && error) { %>
+                    <div class="alert">
+                        <%= error %>
+                    </div>
+                    <% } %>
+
+                        <form method="post" action="/signup" id="signupForm">
+
+                            <div class="signup-fields-grid">
+
+                                <label>
+                                    Full name
+                                    <input type="text" name="name" placeholder="Enter your full name"
+                                        value="<%= form?.name || '' %>" autocomplete="name" minlength="2" required>
+                                </label>
+
+                                <label>
+                                    Email address
+                                    <input type="email" name="email" placeholder="you@example.com"
+                                        value="<%= form?.email || '' %>" autocomplete="email" required>
+                                </label>
+
+                                <label>
+                                    Department
+                                    <input type="text" name="department" placeholder="e.g. Computer Science"
+                                        value="<%= form?.department || '' %>">
+                                </label>
+
+                                <label>
+                                    Year
+                                    <input type="text" name="year" placeholder="e.g. 3rd Year"
+                                        value="<%= form?.year || '' %>">
+                                </label>
+
+                            </div>
+
+                            <label class="signup-password-label">
+                                Password
+
+                                <div class="signup-password-field">
+                                    <input id="pw" type="password" name="password"
+                                        placeholder="Create a strong password" autocomplete="new-password" required>
+
+                                    <button type="button" class="signup-eye" data-password-target="pw"
+                                        aria-label="Show password" title="Show password">Show</button>
+                                </div>
+
+                                <small id="pwHelp">
+                                    Use at least 8 characters, including uppercase,
+                                    lowercase, a number and a special character.
+                                </small>
+                            </label>
+
+                            <label class="signup-password-label">
+                                Confirm password
+
+                                <div class="signup-password-field">
+                                    <input id="confirmPw" type="password" name="confirmPassword"
+                                        placeholder="Enter your password again" autocomplete="new-password" required>
+
+                                    <button type="button" class="signup-eye" data-password-target="confirmPw"
+                                        aria-label="Show confirm password" title="Show password">Show</button>
+                                </div>
+
+                                <small id="confirmPwHelp" aria-live="polite">
+                                    Re-enter your password to confirm it.
+                                </small>
+                            </label>
+
+                            <button class="primary auth-submit signup-submit" type="submit">
+                                Create your account <span>→</span>
+                            </button>
+
+                        </form>
+
+                        <div class="form-divider">
+                            <span>YOUR CAMPUS AWAITS</span>
+                        </div>
+
+                        <p class="switch">
+                            Already a member?
+                            <a href="/login">Login →</a>
+                        </p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('signupForm');
+            const password = document.getElementById('pw');
+            const confirmPassword = document.getElementById('confirmPw');
+            const confirmHelp = document.getElementById('confirmPwHelp');
+            const passwordHelp = document.getElementById('pwHelp');
+
+            // Show/hide either password field
+            document.querySelectorAll('[data-password-target]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const input = document.getElementById(
+                        button.dataset.passwordTarget
+                    );
+
+                    const show = input.type === 'password';
+
+                    input.type = show ? 'text' : 'password';
+                    button.textContent = show ? 'Hide' : 'Show';
+                    button.setAttribute(
+                        'aria-label',
+                        show ? 'Hide password' : 'Show password'
+                    );
+                    button.title = show ? 'Hide password' : 'Show password';
+                });
+            });
+
+            // Password requirements
+            function updatePasswordHelp() {
+                const value = password.value;
+
+                const valid =
+                    value.length >= 8 &&
+                    /[A-Z]/.test(value) &&
+                    /[a-z]/.test(value) &&
+                    /[0-9]/.test(value) &&
+                    /[^A-Za-z0-9]/.test(value);
+
+                passwordHelp.classList.toggle('password-valid', valid);
+
+                passwordHelp.textContent = valid
+                    ? '✓ Password meets all requirements.'
+                    : 'Use at least 8 characters, including uppercase, lowercase, a number and a special character.';
+
+                checkPasswordMatch();
+            }
+
+            // Check that passwords match
+            function checkPasswordMatch() {
+                const first = password.value;
+                const second = confirmPassword.value;
+
+                confirmPassword.setCustomValidity('');
+
+                if (!second) {
+                    confirmHelp.textContent =
+                        'Re-enter your password to confirm it.';
+                    confirmHelp.className = '';
+                    return false;
+                }
+
+                if (first === second) {
+                    confirmHelp.textContent = '✓ Passwords match!';
+                    confirmHelp.className = 'password-valid';
+                    return true;
+                }
+
+                confirmHelp.textContent = '✕ Passwords do not match.';
+                confirmHelp.className = 'password-invalid';
+                confirmPassword.setCustomValidity('Passwords do not match.');
+
+                return false;
+            }
+
+            password.addEventListener('input', updatePasswordHelp);
+            confirmPassword.addEventListener('input', checkPasswordMatch);
+
+            form.addEventListener('submit', event => {
+                if (password.value !== confirmPassword.value) {
+                    event.preventDefault();
+                    checkPasswordMatch();
+                    confirmPassword.reportValidity();
+                    confirmPassword.focus();
+                    return;
+                }
+
+                // The browser also checks the required fields.
+                // Password requirements are checked here as well.
+                const strong =
+                    password.value.length >= 8 &&
+                    /[A-Z]/.test(password.value) &&
+                    /[a-z]/.test(password.value) &&
+                    /[0-9]/.test(password.value) &&
+                    /[^A-Za-z0-9]/.test(password.value);
+
+                if (!strong) {
+                    event.preventDefault();
+                    password.setCustomValidity(
+                        'Use at least 8 characters, including uppercase, lowercase, a number and a special character.'
+                    );
+                    password.reportValidity();
+                    password.focus();
+                }
+            });
+
+            password.addEventListener('input', () => {
+                password.setCustomValidity('');
+            });
+        });
+    </script>
+
+    <script src="/js/auth.js"></script>
+
+</body>
+
+</html>

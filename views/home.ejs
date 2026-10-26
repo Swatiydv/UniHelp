@@ -1,205 +1,324 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Home • UniHelp</title><%- include('partials/head') %>
+    <title>Home • UniHelp</title>
+    <%- include('partials/head') %>
 </head>
 
-<body><%- include('partials/nav') %>
-        <main class="shell">
-            <section class="welcome">
-                <div>
-                    <p class="eyebrow">YOUR CAMPUS. YOUR COMMUNITY.</p>
-                    <h1>What's happening on campus?</h1>
-                    <p class="muted">Ask, help, borrow, sell or lend — all in one place.</p>
-                </div><button class="plus" onclick="openComposer()">＋</button>
-            </section>
-            <section class="feed" id="feed">
-                <% posts.forEach(p=>{
-                    const isOwner = p.user._id.toString() === currentUserId.toString();
+<body>
+    <%- include('partials/nav') %>
 
-                    const postHelps = helps.filter(h =>
-                    h.post && h.post._id.toString() === p._id.toString()
-                    );
+        <main class="shell dashboard-layout">
+            <aside class="category-sidebar" aria-label="Post categories">
+                <div class="category-sidebar-heading">
+                    <span class="category-sidebar-eyebrow">YOUR CAMPUS</span>
+                    <h2>Explore</h2>
+                </div>
 
-                    const acceptedHelp = postHelps.find(h => h.status === 'Accepted');
-                    const completedHelp = postHelps.find(h => h.status === 'Completed');
-                    const requestedHelp = postHelps.find(h => h.status === 'Requested');
-                    const isHelper = completedHelp &&
-                    completedHelp.helper &&
-                    completedHelp.helper._id.toString() === currentUserId.toString();
+                <nav class="category-list" aria-label="Filter posts">
+                    <button type="button" class="category-filter active" data-filter="all" aria-pressed="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                            <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                            <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                            <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+                        </svg>
+                        <span>All Posts</span>
 
-                    const canViewRating = Boolean(
-                    completedHelp && (isOwner || isHelper)
-                    );
-                    %>
-                    <article class="post" id="post-<%=p._id%>" data-id="<%=p._id%>">
-                        <div class="post-head"><a class="avatar" href="/profile/<%=p.user._id%>">
-                                <%=p.user.name?.[0]?.toUpperCase()%>
-                            </a>
-                            <div><a class="user-name" href="/profile/<%=p.user._id%>">
-                                    <%=p.user.name%>
+                    </button>
+
+                    <button type="button" class="category-filter" data-filter="Help Request" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"></path>
+                            <path d="M8.5 12h7M12 8.5v7"></path>
+                        </svg>
+                        <span>Help Requests</span>
+                    </button>
+
+                    <button type="button" class="category-filter" data-filter="Question" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-3 2v-5.2A7.5 7.5 0 1 1 20 11.5Z"></path>
+                            <path d="M9.8 9a2.3 2.3 0 1 1 3.8 1.7c-1 .8-1.6 1.1-1.6 2.3M12 16h.01"></path>
+                        </svg>
+                        <span>Questions</span>
+                    </button>
+
+                    <button type="button" class="category-filter" data-filter="Borrow" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 8.5h16v11H4z"></path>
+                            <path d="M8 8.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2.5M4 12h16M10 12v2h4v-2"></path>
+                        </svg>
+                        <span>Borrow</span>
+                    </button>
+
+                    <button type="button" class="category-filter" data-filter="Sell" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3.5 11V4.5H10L20.5 15 15 20.5 3.5 9Z"></path>
+                            <circle cx="7.5" cy="7.5" r="1"></circle>
+                            <path d="m12 12 4 4M14 10l-4 4"></path>
+                        </svg>
+                        <span>Sell</span>
+                    </button>
+
+                    <button type="button" class="category-filter" data-filter="Lend" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3v12M7 10l5 5 5-5"></path>
+                            <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"></path>
+                        </svg>
+                        <span>Lend / Give Away</span>
+                    </button>
+
+                    <div class="category-divider"></div>
+
+                    <button type="button" class="category-filter" data-filter="mine" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.5"></circle>
+                            <path d="M5 20a7 7 0 0 1 14 0"></path>
+                        </svg>
+                        <span>My Posts</span>
+                    </button>
+                </nav>
+
+                <div class="sidebar-note">
+                    <span class="sidebar-note-mark" aria-hidden="true">✦</span>
+                    <p>A little help can make a big difference.</p>
+                </div>
+            </aside>
+
+            <div class="dashboard-content">
+                <section class="welcome">
+                    <div>
+                        <p class="eyebrow">YOUR CAMPUS. YOUR COMMUNITY.</p>
+                        <h1>What's happening on campus?</h1>
+                        <p class="muted">Ask, help, borrow, sell or lend — all in one place.</p>
+                    </div>
+                    <button class="plus" type="button" onclick="openComposer()" aria-label="Create a post">＋</button>
+                </section>
+
+                <section class="feed" id="feed">
+                    <% posts.forEach(p=> {
+                        const isOwner = p.user._id.toString() === currentUserId.toString();
+
+                        const postHelps = helps.filter(h =>
+                        h.post && h.post._id.toString() === p._id.toString()
+                        );
+
+                        const acceptedHelp = postHelps.find(h => h.status === 'Accepted');
+                        const completedHelp = postHelps.find(h => h.status === 'Completed');
+                        const requestedHelp = postHelps.find(h => h.status === 'Requested');
+                        const isHelper = completedHelp &&
+                        completedHelp.helper &&
+                        completedHelp.helper._id.toString() === currentUserId.toString();
+
+                        const canViewRating = Boolean(completedHelp && (isOwner || isHelper));
+                        %>
+                        <article class="post" id="post-<%=p._id%>" data-id="<%=p._id%>" data-type="<%=p.type%>"
+                            data-owner="<%=isOwner ? 'true' : 'false'%>">
+
+                            <div class="post-head">
+                                <a class="avatar" href="/profile/<%=p.user._id%>">
+                                    <%=p.user.name?.[0]?.toUpperCase()%>
                                 </a>
-                                <div class="muted tiny">
-                                    <%=p.user.department||'Student'%> · <%=p.user.year||'Campus'%> · <%=new
-                                                Date(p.createdAt).toLocaleString()%>
-                                </div>
-                            </div><span class="tag">
-                                <%=p.type%>
-                            </span>
-                            <% if (isOwner && !acceptedHelp && p.status==='Open' ) { %>
-                                <div class="post-menu">
-                                    <button type="button" class="post-menu-btn">⋮</button>
 
-                                    <div class="post-menu-dropdown">
-                                        <button type="button" onclick="editPost('<%=p._id%>')">
-                                            ✏️ Edit
-                                        </button>
-
-                                        <button type="button" onclick="deletePost('<%=p._id%>')">
-                                            🗑️ Delete
-                                        </button>
+                                <div>
+                                    <a class="user-name" href="/profile/<%=p.user._id%>">
+                                        <%=p.user.name%>
+                                    </a>
+                                    <div class="muted tiny">
+                                        <%=p.user.department || 'Student' %> · <%=p.user.year || 'Campus' %> · <%=new
+                                                    Date(p.createdAt).toLocaleString()%>
                                     </div>
+                                </div>
+
+                                <span class="tag">
+                                    <%=p.type%>
+                                </span>
+
+                                <% if (isOwner && !acceptedHelp && p.status==='Open' ) { %>
+                                    <div class="post-menu">
+                                        <button type="button" class="post-menu-btn" aria-label="Post options">⋮</button>
+                                        <div class="post-menu-dropdown">
+                                            <button type="button" onclick="editPost('<%=p._id%>')">✏️ Edit</button>
+                                            <button type="button" onclick="deletePost('<%=p._id%>')">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                            </div>
+
+                            <p class="post-text">
+                                <%=p.content%>
+                            </p>
+
+                            <% if (p.itemName) { %>
+                                <div class="item">
+                                    <b>
+                                        <%=p.itemName%>
+                                    </b>
+                                    <span>
+                                        <%=p.itemCondition || '' %>
+                                    </span>
                                 </div>
                                 <% } %>
 
-                        </div>
-                        <p class="post-text">
-                            <%=p.content%>
-                        </p>
-                        <% if(p.itemName){%>
-                            <div class="item"><b>
-                                    <%=p.itemName%>
-                                </b><span>
-                                    <%=p.itemCondition||''%>
-                                </span></div>
-                            <%}%>
-                                <div class="post-actions">
+                                    <div class="post-actions">
+                                        <% if (p.status==='Resolved' || completedHelp) { %>
+                                            <span class="help-status completed">✓ Help Completed</span>
 
-
-                                    <% if (p.status==='Resolved' || completedHelp) { %>
-
-                                        <span class="help-status completed">
-                                            ✓ Help Completed
-                                        </span>
-
-                                        <% if (completedHelp) { %>
-
-                                            <% if (isOwner) { %>
-                                                <span class="help-status completed">
-                                                    Helped by <%= completedHelp.helper?.name || 'Deleted User' %>
-                                                </span>
-                                                <% } else if (isHelper) { %>
+                                            <% if (completedHelp) { %>
+                                                <% if (isOwner) { %>
                                                     <span class="help-status completed">
-                                                        You helped <%= p.user.name %>
+                                                        Helped by <%=completedHelp.helper?.name || 'Deleted User' %>
                                                     </span>
-                                                    <% } %>
+                                                    <% } else if (isHelper) { %>
+                                                        <span class="help-status completed">You helped <%=p.user.name%>
+                                                        </span>
+                                                        <% } %>
 
-                                                        <% if (canViewRating) { %>
+                                                            <% if (canViewRating) { %>
+                                                                <% const myRating=ratings.find(r=>
+                                                                    r.help.toString() === completedHelp._id.toString()
+                                                                    );
+                                                                    const canRate = !myRating;
+                                                                    %>
 
-                                                            <% const myRating=ratings.find(r=>
-                                                                r.help.toString() === completedHelp._id.toString()
-                                                                );
-
-                                                                const canRate = !myRating;
-                                                                %>
-
-                                                                <div class="post-rating">
-
-                                                                    <div class="rating-label">
-                                                                        <%= myRating ? 'Your rating'
-                                                                            : 'Rate your experience' %>
+                                                                    <div class="post-rating">
+                                                                        <div class="rating-label">
+                                                                            <%=myRating ? 'Your rating'
+                                                                                : 'Rate your experience' %>
+                                                                        </div>
+                                                                        <div class="rating-stars"
+                                                                            data-rating="<%=myRating ? myRating.score : 0%>"
+                                                                            data-can-rate="<%=canRate ? 'true' : 'false'%>"
+                                                                            data-help-id="<%=completedHelp._id%>">
+                                                                            <% for (let i=1; i <=5; i++) { %>
+                                                                                <button type="button"
+                                                                                    class="star-btn <%=myRating && i <= myRating.score ? 'filled' : ''%>"
+                                                                                    data-star="<%=i%>" <%=myRating
+                                                                                    ? 'disabled' : '' %>>
+                                                                                    ★
+                                                                                </button>
+                                                                                <% } %>
+                                                                        </div>
                                                                     </div>
-
-                                                                    <div class="rating-stars"
-                                                                        data-rating="<%= myRating ? myRating.score : 0 %>"
-                                                                        data-can-rate="<%= canRate ? 'true' : 'false' %>"
-                                                                        data-help-id="<%= completedHelp._id %>">
-
-                                                                        <% for (let i=1; i <=5; i++) { %>
-
-                                                                            <button type="button"
-                                                                                class="star-btn <%= myRating && i <= myRating.score ? 'filled' : '' %>"
-                                                                                data-star="<%= i %>" <%=myRating
-                                                                                ? 'disabled' : '' %>
-                                                                                >
-                                                                                ★
-                                                                            </button>
-
-                                                                            <% } %>
-
-                                                                    </div>
-
-                                                                </div>
-
-                                                                <% } %>
-
                                                                     <% } %>
+                                                                        <% } %>
 
-
-                                                                        <% } else if (isOwner && acceptedHelp) { %>
-
-                                                                            <span class="help-status accepted">
-                                                                                ✓ Help Accepted by <%=
-                                                                                    acceptedHelp.helper.name %>
-                                                                            </span>
-
-                                                                            <button class="help-btn complete-btn"
-                                                                                onclick="completeHelp('<%=acceptedHelp._id%>', this)">
-                                                                                ✓ Mark as Completed
-                                                                            </button>
-
-                                                                            <button class="help-btn change-btn"
-                                                                                onclick="cancelHelp('<%=acceptedHelp._id%>', this)">
-                                                                                Change Helper
-                                                                            </button>
-                                                                            <% } else if (isOwner && requestedHelp) { %>
-
-                                                                                <span class="help-status requested">
-                                                                                    🤝 <%= requestedHelp.helper.name %>
-                                                                                        offered to help
+                                                                            <% } else if (isOwner && acceptedHelp) { %>
+                                                                                <span class="help-status accepted">
+                                                                                    ✓ Help Accepted by
+                                                                                    <%=acceptedHelp.helper.name%>
                                                                                 </span>
-
-                                                                                <button class="help-btn"
-                                                                                    onclick="acceptHelp('<%=requestedHelp._id%>', this)">
-                                                                                    Accept Help
+                                                                                <button type="button"
+                                                                                    class="help-btn complete-btn"
+                                                                                    onclick="completeHelp('<%=acceptedHelp._id%>', this)">
+                                                                                    ✓ Mark as Completed
+                                                                                </button>
+                                                                                <button type="button"
+                                                                                    class="help-btn change-btn"
+                                                                                    onclick="cancelHelp('<%=acceptedHelp._id%>', this)">
+                                                                                    Change Helper
                                                                                 </button>
 
-                                                                                <% } else if (!isOwner &&
-                                                                                    !postHelps.some(h=> h.helper
-                                                                                    &&
-                                                                                    h.helper._id.toString() ===
-                                                                                    currentUserId.toString())) { %>
-
-                                                                                    <button class="help-btn"
-                                                                                        onclick="offerHelp('<%=p._id%>', this)">
-                                                                                        🤝 Help
+                                                                                <% } else if (isOwner && requestedHelp)
+                                                                                    { %>
+                                                                                    <span class="help-status requested">
+                                                                                        🤝
+                                                                                        <%=requestedHelp.helper.name%>
+                                                                                            offered to help
+                                                                                    </span>
+                                                                                    <button type="button"
+                                                                                        class="help-btn"
+                                                                                        onclick="acceptHelp('<%=requestedHelp._id%>', this)">
+                                                                                        Accept Help
                                                                                     </button>
 
-                                                                                    <% } %>
+                                                                                    <% } else if (!isOwner &&
+                                                                                        !postHelps.some(h=>
+                                                                                        h.helper &&
+                                                                                        h.helper._id.toString() ===
+                                                                                        currentUserId.toString()
+                                                                                        )) { %>
+                                                                                        <button type="button"
+                                                                                            class="help-btn"
+                                                                                            onclick="offerHelp('<%=p._id%>', this)">
+                                                                                            🤝 Help
+                                                                                        </button>
+                                                                                        <% } %>
+                                    </div>
+                        </article>
+                        <% }) %>
 
-                                </div>
-                    </article>
-                    <% }) %>
-            </section>
+                            <div class="category-empty-state" id="categoryEmptyState" hidden>
+                                <div class="category-empty-icon" aria-hidden="true">⌕</div>
+                                <h3>No posts in this category yet</h3>
+                                <p class="muted">Try another category or create a post for your campus community.</p>
+                            </div>
+                </section>
+            </div>
         </main>
+
         <div id="composer" class="modal">
-            <div class="modal-card"><button class="close" onclick="closeComposer()">×</button>
+            <div class="modal-card">
+                <button type="button" class="close" onclick="closeComposer()" aria-label="Close">×</button>
                 <h2>Create a post</h2>
                 <p class="muted">What do you want your campus community to know?</p>
-                <form id="postForm"><select name="type" required>
+                <form id="postForm">
+                    <select name="type" required>
                         <option value="Help Request">Ask for Help</option>
                         <option value="Question">Ask a Question</option>
                         <option value="Borrow">Borrow Something</option>
                         <option value="Sell">Sell Something</option>
                         <option value="Lend">Lend / Give Away</option>
-                    </select><input name="itemName" placeholder="Item name (optional)"><input name="itemCondition"
-                        placeholder="Condition / price (optional)"><textarea name="content" maxlength="1000"
-                        placeholder="Write your post..." required></textarea><button class="primary">Publish</button>
+                    </select>
+                    <input name="itemName" placeholder="Item name (optional)">
+                    <input name="itemCondition" placeholder="Condition / price (optional)">
+                    <textarea name="content" maxlength="1000" placeholder="Write your post..." required></textarea>
+                    <button class="primary" type="submit">Publish</button>
                 </form>
             </div>
-        </div><%- include('partials/ai') %>
+        </div>
+
+        <%- include('partials/ai') %>
             <script src="/js/app.js"></script>
+
+            <script>
+                (() => {
+                    const filterButtons = document.querySelectorAll('.category-filter');
+                    const posts = Array.from(document.querySelectorAll('#feed .post'));
+                    const emptyState = document.getElementById('categoryEmptyState');
+
+                    const allCount = document.getElementById('count-all');
+                    if (allCount) allCount.textContent = posts.length;
+
+                    function applyFilter(filter) {
+                        let visibleCount = 0;
+
+                        posts.forEach(post => {
+                            const matches = filter === 'all'
+                                || (filter === 'mine' && post.dataset.owner === 'true')
+                                || post.dataset.type === filter;
+
+                            post.hidden = !matches;
+                            if (matches) visibleCount++;
+                        });
+
+                        filterButtons.forEach(button => {
+                            const active = button.dataset.filter === filter;
+                            button.classList.toggle('active', active);
+                            button.setAttribute('aria-pressed', String(active));
+                        });
+
+                        if (emptyState) emptyState.hidden = visibleCount !== 0;
+                    }
+
+                    filterButtons.forEach(button => {
+                        button.addEventListener('click', () => applyFilter(button.dataset.filter));
+                    });
+
+                    applyFilter('all');
+                })();
+            </script>
 </body>
 
 </html>

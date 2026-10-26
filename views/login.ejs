@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
     <title>Login • UniHelp</title>
@@ -7,55 +7,128 @@
 </head>
 
 <body class="auth-page">
-    <div class="auth-card">
+    <div class="auth-layout">
 
-        <a class="brand big" href="/login">
-            <span class="logo-mark">
-                <span>U</span>
-            </span>
-            <span>Uni<span>Help</span></span>
-        </a>
+        <!-- Left branding panel -->
+        <section class="auth-welcome">
+            <a class="brand big" href="/login">
+                <span class="logo-mark"><span>U</span></span>
+                <span>Uni<span>Help</span></span>
+            </a>
 
-        <h1>Welcome back</h1>
-        <p class="muted">Your campus community is waiting.</p>
+            <div class="welcome-content">
+                <span class="welcome-tag">YOUR CAMPUS, CONNECTED</span>
 
-        <% if (typeof error !=='undefined' && error) { %>
-            <div class="alert">
-                <%= error %>
+                <h1>Your campus.<br>Your community.<br><span>Your UniHelp.</span></h1>
 
-                    <% if (typeof showSignup !=='undefined' && showSignup) { %>
-                        <a href="/signup">sign up.</a>
-                        <% } %>
-            </div>
-            <% } %>
-
-                <form method="post" action="/login">
-                    <label>
-                        Email
-                        <input type="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>"
-                            required>
-                    </label>
-
-                    <label>
-                        Password
-                        <input type="password" name="password" required>
-                    </label>
-
-                    <button class="primary">
-                        Login
-                    </button>
-                </form>
-
-                <a class="forgot" href="/forgot-password">
-                    Forgot password?
-                </a>
-
-                <p class="switch">
-                    New here?
-                    <a href="/signup">Create an account</a>
+                <p>
+                    A community where students help each other, share resources,
+                    and make university life easier.
                 </p>
 
+                <div class="welcome-benefits">
+                    <div class="benefit">
+                        <span class="benefit-icon">↗</span>
+                        <div>
+                            <strong>Share what you have</strong>
+                            <small>Help others with resources and essentials.</small>
+                        </div>
+                    </div>
+
+                    <div class="benefit">
+                        <span class="benefit-icon">♡</span>
+                        <div>
+                            <strong>Get help when you need it</strong>
+                            <small>Your campus community has your back.</small>
+                        </div>
+                    </div>
+
+                    <div class="benefit">
+                        <span class="benefit-icon">✦</span>
+                        <div>
+                            <strong>Grow together</strong>
+                            <small>Connect, collaborate, and build trust.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="welcome-footer">Better together. Built for students. 💜</p>
+        </section>
+
+        <!-- Right login panel -->
+        <main class="auth-form-panel">
+            <div class="auth-card">
+
+                <div class="form-heading">
+                    <span class="form-eyebrow">WELCOME BACK</span>
+                    <h2>Log in to UniHelp</h2>
+                    <p class="muted">Pick up where your campus community left off.</p>
+                </div>
+
+                <% if (typeof error !=='undefined' && error) { %>
+                    <div class="alert">
+                        <%= error %>
+                            <% if (typeof showSignup !=='undefined' && showSignup) { %>
+                                <a href="/signup">Sign up</a>
+                                <% } %>
+                    </div>
+                    <% } %>
+
+                        <form method="post" action="/login">
+                            <label>
+                                Email address
+                                <input type="email" name="email" placeholder="you@example.com"
+                                    value="<%= typeof email !== 'undefined' ? email : '' %>" autocomplete="email"
+                                    required>
+                            </label>
+
+                            <label>
+                                Password
+                                <div class="password-field">
+                                    <input type="password" id="loginPassword" name="password"
+                                        placeholder="Enter your password" autocomplete="current-password" required>
+
+                                    <button type="button" class="toggle-password" onclick="togglePassword()"
+                                        aria-label="Show password" title="Show password">
+                                        👁
+                                    </button>
+                                </div>
+                            </label>
+
+                            <div class="form-options">
+                                <a class="forgot" href="/forgot-password">Forgot password?</a>
+                            </div>
+
+                            <button class="primary auth-submit" type="submit">
+                                Login to your account <span>→</span>
+                            </button>
+                        </form>
+
+                        <div class="form-divider"><span>YOUR CAMPUS AWAITS</span></div>
+
+                        <p class="switch">
+                            New to UniHelp?
+                            <a href="/signup">Create an account →</a>
+                        </p>
+
+            </div>
+        </main>
+
     </div>
+
+    <script>
+        function togglePassword() {
+            const password = document.getElementById('loginPassword');
+            const button = document.querySelector('.toggle-password');
+            const isHidden = password.type === 'password';
+
+            password.type = isHidden ? 'text' : 'password';
+            button.textContent = isHidden ? '🙈' : '👁';
+            button.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            button.title = isHidden ? 'Hide password' : 'Show password';
+        }
+    </script>
 </body>
 
 </html>

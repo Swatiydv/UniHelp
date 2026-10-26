@@ -15,7 +15,11 @@
                 <a href="/chats">←</a>
 
                 <span class="avatar">
-                    <%= other && other.name ? other.name[0].toUpperCase() : 'D' %>
+                    <% if (other && other.avatar) { %>
+                        <img src="<%= other.avatar %>" alt="<%= other.name || 'User' %>" class="chat-profile-photo">
+                        <% } else { %>
+                            <%= other && other.name ? other.name[0].toUpperCase() : 'D' %>
+                                <% } %>
                 </span>
 
                 <div>
@@ -30,18 +34,33 @@
 
             <div class="messages" id="messages">
                 <% messages.forEach(m=> { %>
-                    <div class="bubble <%= m.sender && m.sender._id.toString() === user.id ? 'mine' : '' %>">
-
+                    <div id="message-<%= m._id %>"
+                        class="bubble <%= m.sender && m.sender._id.toString() === user.id ? 'mine' : '' %>">
                         <% if (m.attachment) { %>
+
                             <% if (m.attachment.mimetype && m.attachment.mimetype.startsWith('image/')) { %>
-                                <img src="/api/attachments/<%= m._id %>" alt="<%= m.attachment.originalName %>"
-                                    style="display:block; max-width:220px; max-height:220px; width:auto; height:auto; object-fit:contain; border-radius:8px; margin-bottom:8px;"
-                                    loading="lazy">
+
+                                <img class="chat-message-image" src="/api/attachments/<%= m._id %>"
+                                    alt="<%= m.attachment.originalName %>" loading="lazy">
+
                                 <% } else { %>
-                                    <a href="/api/attachments/<%= m._id %>">
-                                        📄 <%= m.attachment.originalName %>
+
+                                    <a class="chat-attachment-file" href="/api/attachments/<%= m._id %>"
+                                        title="Download <%= m.attachment.originalName %>">
+                                        <span class="file-icon">📄</span>
+
+                                        <span class="file-details">
+                                            <strong>
+                                                <%= m.attachment.originalName %>
+                                            </strong>
+                                            <small>Download attachment</small>
+                                        </span>
+
+                                        <span class="file-download-icon">↓</span>
                                     </a>
+
                                     <% } %>
+
                                         <% } %>
 
 
@@ -144,7 +163,12 @@
             let previewObjectUrls = [];
 
             // Open the file picker.
-            attachmentButton.onclick = () => attachmentInput.click();
+            attachmentButton.type = 'button';
+
+            attachmentButton.onclick = event => {
+                event.preventDefault();
+                attachmentInput.click();
+            };
 
             // Preview all selected attachments.
             attachmentInput.onchange = () => {
@@ -181,6 +205,7 @@
                     attachmentThumbnail.removeAttribute('src');
                     attachmentThumbnail.style.display = 'none';
                 }
+                messageInput.focus();
             };
 
             // Clear selected attachments and previews.
@@ -319,9 +344,108 @@
                         conversationId: cid
                     });
                 };
+                messageInput.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+
+                        if (chatForm.requestSubmit) {
+                            chatForm.requestSubmit();
+                        } else {
+                            chatForm.dispatchEvent(new Event('submit', {
+                                bubbles: true,
+                                cancelable: true
+                            }));
+                        }
+                    }
+                });
+            }
+            function renderMessage(m) {
+                if (!m || !m._id) return;
+
+                // Prevent duplicate messages.
+                if (document.getElementById(`message-${m._id}`)) return;
+
+                const bubble = document.createElement('div');
+                bubble.id = `message-${m._id}`;
+                bubble.className = 'bubble';
+
+                const senderId = m.sender?._id || m.sender;
+                const currentUserId = '<%= user.id %>';
+
+                if (senderId && String(senderId) === String(currentUserId)) {
+                    bubble.classList.add('mine');
+                }
+
+                if (m.attachment) {
+                    if (m.attachment.mimetype?.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.className = 'chat-message-image';
+                        img.src = m.attachment.url || `/api/attachments/${m._id}`;
+                        img.alt = m.attachment.originalName || 'Image attachment';
+                        img.loading = 'lazy';
+                        bubble.appendChild(img);
+                    } else {
+                        const link = document.createElement('a');
+                        link.className = 'chat-attachment-file';
+                        link.href = m.attachment.url || `/api/attachments/${m._id}`;
+                        link.title = `Download ${m.attachment.originalName || 'attachment'}`;
+
+                        const icon = document.createElement('span');
+                        icon.className = 'file-icon';
+                        icon.textContent = '📄';
+
+                        const details = document.createElement('span');
+                        details.className = 'file-details';
+
+                        const name = document.createElement('strong');
+                        name.textContent = m.attachment.originalName || 'Attachment';
+
+                        const description = document.createElement('small');
+                        description.textContent = 'Download attachment';
+
+                        const download = document.createElement('span');
+                        download.className = 'file-download-icon';
+                        download.textContent = '↓';
+
+                        details.append(name, description);
+                        link.append(icon, details, download);
+                        bubble.appendChild(link);
+                    }
+                }
+
+                if (m.text) {
+                    const text = document.createElement('div');
+                    text.className = 'message-text';
+                    text.textContent = m.text;
+                    bubble.appendChild(text);
+                }
+
+                const timestamp = document.createElement('small');
+                timestamp.textContent = new Date(m.createdAt || Date.now()).toLocaleString([], {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                bubble.appendChild(timestamp);
+                box.appendChild(bubble);
+                box.scrollTop = box.scrollHeight;
+            }
+            // Receive new text messages and attachments
+            function scrollToLatestMessage() {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        box.scrollTop = box.scrollHeight;
+                    });
+                });
             }
 
-            // Receive new text messages and attachments
+            window.addEventListener('load', scrollToLatestMessage);
+
+            window.addEventListener('pageshow', scrollToLatestMessage);
+
             socket.on('newMessage', renderMessage);
             socket.on('typing', x => {
                 const typing = document.getElementById('typing');
@@ -338,8 +462,10 @@
             const closeImageLightbox = document.getElementById('closeImageLightbox');
 
             box.addEventListener('click', event => {
-                if (event.target.matches('.chat-message-image')) {
-                    lightboxImage.src = event.target.src;
+                const image = event.target.closest('.chat-message-image');
+
+                if (image) {
+                    lightboxImage.src = image.src;
                     imageLightbox.hidden = false;
                     document.body.style.overflow = 'hidden';
                 }
